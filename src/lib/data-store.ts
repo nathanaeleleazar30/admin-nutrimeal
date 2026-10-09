@@ -80,6 +80,45 @@ export interface Customer {
   totalSpent: number;
   activeSubscription?: string;
   joinedDate: string;
+  allergies?: string[];
+  dietaryGoals?: string[];
+  targetCalories?: number;
+}
+
+export type VoucherDiscountType = 'nominal' | 'percent' | 'free_shipping' | 'cashback';
+
+export interface VoucherPromo {
+  id: string;
+  code: string;
+  title: string;
+  discountType: VoucherDiscountType;
+  discountValue: number;
+  maxDiscount?: number;
+  minSpend: number;
+  categoryTag: string;
+  badgeText?: string;
+  isActive: boolean;
+  quota: number;
+  usedCount: number;
+  validUntil: string;
+}
+
+export interface ActiveSubscription {
+  id: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  packageName: string;
+  mealSlot: 'Makan Siang' | 'Makan Malam' | 'Siang & Malam' | 'Full Day (3x)';
+  deliveryTimeSlot: string; // e.g. '11.30 – 13.00 WIB (Slot Utama)'
+  startDate: string;
+  endDate: string;
+  daysRemaining: number;
+  totalDays: number;
+  status: 'Aktif' | 'Dijeda' | 'Selesai';
+  pauseReason?: string;
+  autoRenew: boolean;
+  address: string;
 }
 
 // Initial In-Memory State
@@ -482,6 +521,9 @@ class NutriMealDatabase {
       totalSpent: 4200000,
       activeSubscription: 'Paket Diet Sehat Mingguan',
       joinedDate: '2024-03-15',
+      allergies: ['Kacang Tanah', 'Udang / Seafood'],
+      dietaryGoals: ['Defisit Kalori', 'Tinggi Protein'],
+      targetCalories: 1650,
     },
     {
       id: 'cst-2',
@@ -495,6 +537,9 @@ class NutriMealDatabase {
       totalSpent: 14700000,
       activeSubscription: 'Paket Makan Siang Kantor',
       joinedDate: '2024-01-10',
+      allergies: ['Gluten (Celiac)'],
+      dietaryGoals: ['Clean Eating', 'Less Oil & Low Sodium'],
+      targetCalories: 1400,
     },
     {
       id: 'cst-3',
@@ -507,6 +552,9 @@ class NutriMealDatabase {
       totalSpent: 5440000,
       activeSubscription: 'Paket Family 5 Hari',
       joinedDate: '2024-06-01',
+      allergies: ['None / Tidak Ada'],
+      dietaryGoals: ['Gizi Seimbang Keluarga', 'Organic Only'],
+      targetCalories: 2100,
     },
     {
       id: 'cst-4',
@@ -520,6 +568,9 @@ class NutriMealDatabase {
       totalSpent: 48500000,
       activeSubscription: 'Prasmanan Rapat Kantor',
       joinedDate: '2023-11-20',
+      allergies: ['None / Tidak Ada'],
+      dietaryGoals: ['Halal Certified', 'Executive Healthy Bento'],
+      targetCalories: 1800,
     },
     {
       id: 'cst-5',
@@ -532,6 +583,9 @@ class NutriMealDatabase {
       totalSpent: 1110000,
       activeSubscription: 'Paket Diet Sehat Mingguan',
       joinedDate: '2024-08-12',
+      allergies: ['Laktosa / Susu Sapi'],
+      dietaryGoals: ['Muscle Building', 'High Protein (120g/hari)'],
+      targetCalories: 2200,
     },
   ];
 
@@ -670,6 +724,135 @@ class NutriMealDatabase {
     return true;
   }
 
+  public vouchers: VoucherPromo[] = [
+    {
+      id: 'voc-1',
+      code: 'NUTRI15K',
+      title: 'Diskon Rp15.000',
+      discountType: 'nominal',
+      discountValue: 15000,
+      minSpend: 75000,
+      categoryTag: 'NutriPay / Saldo',
+      badgeText: 'TERPILIH',
+      isActive: true,
+      quota: 100,
+      usedCount: 42,
+      validUntil: '2026-12-31',
+    },
+    {
+      id: 'voc-2',
+      code: 'FREEONGKIR',
+      title: 'Gratis Ongkir s.d. Rp15.000',
+      discountType: 'free_shipping',
+      discountValue: 15000,
+      maxDiscount: 15000,
+      minSpend: 75000,
+      categoryTag: '✓ Semua Menu Diet & Katering',
+      badgeText: 'REKOMENDASI',
+      isActive: true,
+      quota: 150,
+      usedCount: 98,
+      validUntil: '2026-11-30',
+    },
+    {
+      id: 'voc-3',
+      code: 'DIET30',
+      title: 'Diskon 30% Katering Sehat',
+      discountType: 'percent',
+      discountValue: 30,
+      maxDiscount: 40000,
+      minSpend: 120000,
+      categoryTag: 'Langganan Baru',
+      badgeText: '⚡ Terbatas',
+      isActive: true,
+      quota: 50,
+      usedCount: 21,
+      validUntil: '2026-10-31',
+    },
+    {
+      id: 'voc-4',
+      code: 'CASHBACK20',
+      title: 'Cashback 20% Koin Sehat',
+      discountType: 'cashback',
+      discountValue: 20,
+      maxDiscount: 10000,
+      minSpend: 50000,
+      categoryTag: 'Spesial NutriPay',
+      isActive: true,
+      quota: 80,
+      usedCount: 35,
+      validUntil: '2026-12-31',
+    },
+  ];
+
+  public activeSubscriptions: ActiveSubscription[] = [
+    {
+      id: 'sub-1',
+      customerId: 'cst-1',
+      customerName: 'Dimas Pratama',
+      customerPhone: '0812-8890-1122',
+      packageName: 'Paket Diet Sehat Mingguan',
+      mealSlot: 'Siang & Malam',
+      deliveryTimeSlot: '11.30 – 13.00 WIB (Slot Utama)',
+      startDate: '2026-10-01',
+      endDate: '2026-10-14',
+      daysRemaining: 4,
+      totalDays: 14,
+      status: 'Aktif',
+      autoRenew: true,
+      address: 'Jl. Soekarno Hatta No. 45, Lowokwaru, Malang',
+    },
+    {
+      id: 'sub-2',
+      customerId: 'cst-2',
+      customerName: 'Amanda Putri',
+      customerPhone: '0858-7702-9901',
+      packageName: 'Paket Makan Siang Kantor',
+      mealSlot: 'Makan Siang',
+      deliveryTimeSlot: '11.30 – 13.00 WIB (Slot Utama)',
+      startDate: '2026-10-01',
+      endDate: '2026-10-30',
+      daysRemaining: 21,
+      totalDays: 30,
+      status: 'Aktif',
+      autoRenew: true,
+      address: 'Gedung Graha Pena Lt. 4, PT Digita Kreasi Nusa, Malang',
+    },
+    {
+      id: 'sub-3',
+      customerId: 'cst-3',
+      customerName: 'Dr. Rio Wicaksono',
+      customerPhone: '0819-3331-4455',
+      packageName: 'Paket Family 5 Hari',
+      mealSlot: 'Siang & Malam',
+      deliveryTimeSlot: '12.30 – 13.30 WIB (Terakhir Siang)',
+      startDate: '2026-10-05',
+      endDate: '2026-10-10',
+      daysRemaining: 2,
+      totalDays: 5,
+      status: 'Dijeda',
+      pauseReason: 'Cuti / Dinas luar kota ke Surabaya',
+      autoRenew: false,
+      address: 'Perumahan Permata Jingga Blok D-12, Malang',
+    },
+    {
+      id: 'sub-4',
+      customerId: 'cst-5',
+      customerName: 'Kevin Tan',
+      customerPhone: '0877-6411-2233',
+      packageName: 'Paket Diet Sehat Mingguan',
+      mealSlot: 'Makan Siang',
+      deliveryTimeSlot: '10.30 – 11.30 WIB (Lebih Awal)',
+      startDate: '2026-10-08',
+      endDate: '2026-10-15',
+      daysRemaining: 6,
+      totalDays: 7,
+      status: 'Aktif',
+      autoRenew: false,
+      address: 'Apartemen Begawan Lt. 12 No. 04, Malang',
+    },
+  ];
+
   // Customers
   public getCustomers(search?: string) {
     let list = [...this.customers];
@@ -684,6 +867,55 @@ class NutriMealDatabase {
       );
     }
     return list;
+  }
+
+  // Vouchers
+  public getVouchers() {
+    return [...this.vouchers];
+  }
+
+  public createVoucher(data: Omit<VoucherPromo, 'id' | 'usedCount'>) {
+    const newVoucher: VoucherPromo = {
+      id: `voc-${Date.now()}`,
+      usedCount: 0,
+      ...data,
+    };
+    this.vouchers.unshift(newVoucher);
+    return newVoucher;
+  }
+
+  public updateVoucher(id: string, data: Partial<VoucherPromo>) {
+    const index = this.vouchers.findIndex((v) => v.id === id);
+    if (index === -1) return null;
+    this.vouchers[index] = { ...this.vouchers[index], ...data };
+    return this.vouchers[index];
+  }
+
+  public deleteVoucher(id: string) {
+    const index = this.vouchers.findIndex((v) => v.id === id);
+    if (index === -1) return false;
+    this.vouchers.splice(index, 1);
+    return true;
+  }
+
+  public toggleVoucherStatus(id: string) {
+    const v = this.vouchers.find((voc) => voc.id === id);
+    if (!v) return null;
+    v.isActive = !v.isActive;
+    return v;
+  }
+
+  // Subscriptions
+  public getActiveSubscriptions() {
+    return [...this.activeSubscriptions];
+  }
+
+  public updateSubscriptionStatus(id: string, status: 'Aktif' | 'Dijeda' | 'Selesai', pauseReason?: string) {
+    const sub = this.activeSubscriptions.find((s) => s.id === id);
+    if (!sub) return null;
+    sub.status = status;
+    if (pauseReason !== undefined) sub.pauseReason = pauseReason;
+    return sub;
   }
 
   // Analytics & Dashboard Summary

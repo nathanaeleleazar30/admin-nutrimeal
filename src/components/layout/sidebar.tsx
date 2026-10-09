@@ -13,6 +13,11 @@ import {
   Settings,
   Leaf,
   LogOut,
+  Bell,
+  MessageSquare,
+  Calendar,
+  HelpCircle,
+  Ticket,
 } from 'lucide-react';
 
 const mainMenuItems = [
@@ -27,14 +32,40 @@ const mainMenuItems = [
     icon: UtensilsCrossed,
   },
   {
+    name: 'Paket Langganan',
+    href: '/admin/packages',
+    icon: Package,
+  },
+  {
     name: 'Kelola Pesanan',
     href: '/admin/orders',
     icon: ShoppingBag,
   },
   {
+    name: 'Jadwal Pengiriman',
+    href: '/admin/schedule',
+    icon: Calendar,
+  },
+  {
+    name: 'Voucher & Promo',
+    href: '/admin/vouchers',
+    icon: Ticket,
+  },
+  {
     name: 'Data Pelanggan',
     href: '/admin/customers',
     icon: Users,
+  },
+  {
+    name: 'Chat & CS Pelanggan',
+    href: '/admin/chat',
+    icon: MessageSquare,
+  },
+  {
+    name: 'Notifikasi',
+    href: '/admin/notifications',
+    icon: Bell,
+    badge: 3,
   },
   {
     name: 'Laporan Penjualan',
@@ -44,6 +75,11 @@ const mainMenuItems = [
 ];
 
 const systemMenuItems = [
+  {
+    name: 'FAQ & Bantuan',
+    href: '/admin/faq',
+    icon: HelpCircle,
+  },
   {
     name: 'Pengaturan Katering',
     href: '/admin/settings',
@@ -102,7 +138,12 @@ export function Sidebar() {
                       isActive ? 'text-white' : 'text-slate-500'
                     }`}
                   />
-                  <span>{item.name}</span>
+                  <span className="flex-1">{item.name}</span>
+                  {'badge' in item && (item as any).badge ? (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500 text-white">
+                      {(item as any).badge}
+                    </span>
+                  ) : null}
                 </Link>
               );
             })}
