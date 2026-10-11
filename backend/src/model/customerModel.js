@@ -31,21 +31,129 @@ const customerModel = {
     };
   },
 
+  async findByEmail(email) {
+    try {
+      const sql = 'SELECT * FROM customers WHERE email = ? LIMIT 1';
+      const [rows] = await pool.query(sql, [email]);
+      if (!rows || !rows[0]) return null;
+      return {
+        ...rows[0],
+        allergies: rows[0].allergies ? rows[0].allergies.split(',').map((s) => s.trim()) : [],
+        dietary_goals: rows[0].dietary_goals ? rows[0].dietary_goals.split(',').map((s) => s.trim()) : [],
+      };
+    } catch (err) {
+      console.error('Error findByEmail:', err.message);
+      return null;
+    }
+  },
+
+  async findByGoogleId(googleId) {
+    try {
+      const sql = 'SELECT * FROM customers WHERE google_id = ? LIMIT 1';
+      const [rows] = await pool.query(sql, [googleId]);
+      if (!rows || !rows[0]) return null;
+      return {
+        ...rows[0],
+        allergies: rows[0].allergies ? rows[0].allergies.split(',').map((s) => s.trim()) : [],
+        dietary_goals: rows[0].dietary_goals ? rows[0].dietary_goals.split(',').map((s) => s.trim()) : [],
+      };
+    } catch (err) {
+      // Jika kolom google_id belum ada di tabel lama
+      return null;
+    }
+  },
+
+  async findOrCreateGoogleUser({ googleId, email, name, avatarUrl, phone }) {
+    // 1. Cek berdasarkan googleId jika ada
+    if (googleId) {
+      const byGoogle = await this.findByGoogleId(googleId);
+      if (byGoogle) return byGoogle;
+    }
+
+    // 2. Cek berdasarkan email
+    if (email) {
+      const byEmail = await this.findByEmail(email);
+      if (byEmail) {
+        // Tautkan google_id ke customer yang sudah ada jika belum tertaut
+        if ((googleId && !byEmail.google_id) || (phone && !byEmail.phone)) {
+          try {
+            await pool.query(
+              'UPDATE customers SET google_id = COALESCE(google_id, ?), avatar_url = COALESCE(avatar_url, ?), phone = CASE WHEN phone = \'\' OR phone IS NULL THEN ? ELSE phone END WHERE id = ?',
+              [googleId || null, avatarUrl || null, phone || '', byEmail.id]
+            );
+          } catch (e) {
+            // Abaikan jika error
+          }
+        }
+        return await this.getById(byEmail.id);
+      }
+    }
+
+    // 3. Daftarkan customer baru otomatis dari akun Google
+    const id = `cst-${Date.now()}`;
+    try {
+      const insertSql = `
+        INSERT INTO customers (
+          id, name, email, google_id, avatar_url, phone, address, type, company_name,
+          total_orders, total_spent, active_subscription, allergies, dietary_goals,
+          target_calories, joined_date
+        )
+        VALUES (?, ?, ?, ?, ?, ?, '', 'Personal', NULL, 0, 0, NULL, '', '', 1800, CURDATE())
+      `;
+      await pool.query(insertSql, [
+        id,
+        name || 'Pengguna Baru',
+        email,
+        googleId || null,
+        avatarUrl || null,
+        phone || '',
+      ]);
+    } catch (err) {
+      // Fallback jika database belum ada kolom google_id / avatar_url
+      if (err.code === 'ER_BAD_FIELD_ERROR') {
+        const fallbackSql = `
+          INSERT INTO customers (
+            id, name, email, phone, address, type, company_name,
+            total_orders, total_spent, active_subscription, allergies, dietary_goals,
+            target_calories, joined_date
+          )
+          VALUES (?, ?, ?, '', '', 'Personal', NULL, 0, 0, NULL, '', '', 1800, CURDATE())
+        `;
+        await pool.query(fallbackSql, [
+          id,
+          name || 'Pengguna Baru',
+          email,
+        ]);
+      } else {
+        throw err;
+      }
+    }
+
+    return await this.getById(id);
+  },
+
   async create(data) {
     const id = data.id || `cst-${Date.now()}`;
     const allergiesStr = Array.isArray(data.allergies) ? data.allergies.join(', ') : data.allergies || '';
     const dietaryStr = Array.isArray(data.dietary_goals) ? data.dietary_goals.join(', ') : data.dietary_goals || '';
 
     const sql = `
-      INSERT INTO customers (id, name, email, phone, address, type, company_name, total_orders, total_spent, active_subscription, allergies, dietary_goals, target_calories, joined_date)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO customers (
+        id, name, email, password, google_id, avatar_url, phone, address,
+        type, company_name, total_orders, total_spent, active_subscription,
+        allergies, dietary_goals, target_calories, joined_date
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const params = [
       id,
       data.name,
       data.email,
-      data.phone,
-      data.address,
+      data.password || null,
+      data.google_id || null,
+      data.avatar_url || null,
+      data.phone || '',
+      data.address || '',
       data.type || 'Personal',
       data.company_name || null,
       Number(data.total_orders || 0),

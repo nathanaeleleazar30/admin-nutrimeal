@@ -143,6 +143,8 @@ Sesuai ketentuan penilaian pada materi React Server Components (RSC):
 |---|---|---|---|
 | `GET` | `/` | Health check & indeks server | `200` |
 | `POST` | `/api/auth/login` | Autentikasi admin (email & password ke MySQL) | `200`, `400`, `401` |
+| `POST` | `/api/auth/google` | Mobile Customer Auth (Daftar & Login otomatis via Google) | `200`, `400`, `401` |
+| `GET` | `/api/auth/customer-me` | Mengambil data sesi/profil customer mobile yang login | `200`, `404` |
 | `GET` | `/api/meals` | Mengambil seluruh daftar menu makanan | `200` |
 | `GET` | `/api/meals/:id` | Detail menu berdasarkan ID | `200`, `404` |
 | `POST` | `/api/meals` | Menambahkan menu makanan baru | `201`, `400` |

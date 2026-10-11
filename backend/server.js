@@ -54,6 +54,7 @@ app.get('/', (req, res) => {
       customers: '/api/customers',
       subscriptions: '/api/subscriptions',
       faqs: '/api/faqs',
+      auth: '/api/auth',
     },
   });
 });

@@ -52,8 +52,10 @@ async function runSeeder() {
         \`id\` VARCHAR(50) NOT NULL,
         \`name\` VARCHAR(100) NOT NULL,
         \`email\` VARCHAR(100) NOT NULL UNIQUE,
-        \`phone\` VARCHAR(25) NOT NULL,
-        \`address\` TEXT NOT NULL,
+        \`google_id\` VARCHAR(100) NULL,
+        \`avatar_url\` TEXT NULL,
+        \`phone\` VARCHAR(25) NOT NULL DEFAULT '',
+        \`address\` TEXT NULL,
         \`type\` ENUM('Personal', 'Korporat / Kantor', 'Keluarga') NOT NULL DEFAULT 'Personal',
         \`company_name\` VARCHAR(100) NULL,
         \`total_orders\` INT NOT NULL DEFAULT 0,
@@ -68,6 +70,12 @@ async function runSeeder() {
         PRIMARY KEY (\`id\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    // Pastikan kolom baru ada jika tabel customers sudah ada sebelumnya
+    try { await connection.query("ALTER TABLE `customers` ADD COLUMN `google_id` VARCHAR(100) NULL AFTER `email`;"); } catch (e) {}
+    try { await connection.query("ALTER TABLE `customers` ADD COLUMN `avatar_url` TEXT NULL AFTER `google_id`;"); } catch (e) {}
+    try { await connection.query("ALTER TABLE `customers` MODIFY COLUMN `phone` VARCHAR(25) NOT NULL DEFAULT '';"); } catch (e) {}
+    try { await connection.query("ALTER TABLE `customers` MODIFY COLUMN `address` TEXT NULL;"); } catch (e) {}
 
     // Tabel Meals
     await connection.query(`
