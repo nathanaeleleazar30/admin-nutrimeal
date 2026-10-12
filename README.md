@@ -1,6 +1,6 @@
 # NutriMeal - Full-Stack Web Platform Katering Sehat UMKM
 
-Proyek Tugas Besar **UTS - Pemrograman Web Framework**.
+.
 Aplikasi manajemen operasional katering sehat yang dibangun dengan arsitektur **Clean Code**, memisahkan sisi **Backend REST API (Express.js + MySQL)** dan **Frontend (Next.js App Router dengan React Server Components)**.
 
 ---
@@ -164,6 +164,4 @@ Sesuai ketentuan penilaian pada materi React Server Components (RSC):
 
 ---
 
-## 👨‍💻 Kontributor & Tim
-* **Proyek**: NutriMeal - Platform Katering Sehat UMKM
-* **Mata Kuliah**: Pemrograman Web Framework (UTS)
+
