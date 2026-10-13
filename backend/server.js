@@ -23,12 +23,16 @@ const PORT = process.env.PORT || 5000;
 // 1. Middleware Global (Urutan Sesuai Soal UTS)
 // ==========================================
 
-// a. CORS - Izinkan origin frontend
+// a. CORS - Izinkan origin frontend (Next.js Admin, Flutter Web, & Mobile)
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || '*',
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    origin: (origin, callback) => {
+      // Izinkan semua origin termasuk mobile native (null origin), localhost, dan IP LAN
+      callback(null, true);
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true,
   })
 );
 

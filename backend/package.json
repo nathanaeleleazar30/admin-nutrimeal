@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "db:migrate": "node src/lib/migrate.js",
     "seed": "node src/lib/seeder.js"
   },
   "keywords": [

@@ -20,23 +20,13 @@ Backend REST API untuk aplikasi katering sehat **NutriMeal** yang dibangun mengg
 
 ### 1. Prasyarat Sistem
 * **Node.js**: v18.x atau yang lebih baru
-* **MySQL / MariaDB Server**: (XAMPP, Laragon, Docker, atau MySQL Server lokal)
+* **MySQL / MariaDB Server**: Laragon, XAMPP, atau instalasi lokal
 
-### 2. Setup & Seeding Database
-Ada 2 cara mudah untuk menyiapkan database:
-
-* **Cara 1 (Paling Cepat & Otomatis - Direkomendasikan)**:
-  Jalankan perintah seeder di terminal:
-  ```bash
-  npm run seed
-  ```
-  *(Perintah ini otomatis membuat database `nutrimeal_db`, seluruh tabel relasional, serta data awal admin & menu).*
-
-* **Cara 2 (Manual via HeidiSQL / phpMyAdmin)**:
-  Import file `database.sql`:
-  ```bash
-  mysql -u root -p < database.sql
-  ```
+### 2. Instalasi Dependensi
+Jalankan perintah berikut di dalam folder `backend`:
+```bash
+npm install
+```
 
 ### 3. Konfigurasi Environment Variable
 Salin file `.env.example` menjadi `.env`:
@@ -57,11 +47,15 @@ DB_PORT=3306
 FRONTEND_URL=http://localhost:3000
 ```
 
-### 4. Instalasi Dependensi
-Jalankan perintah berikut di dalam folder `backend`:
+### 4. Setup & Seeding Database
+Jalankan MySQL lokal melalui Laragon, XAMPP, atau instalasi MySQL/MariaDB Anda. Dari folder `backend`, jalankan migration lalu seeder:
+
 ```bash
-npm install
+npm run db:migrate
+npm run seed
 ```
+
+Migration membuat database lokal `nutrimeal_db`, tabel-tabel, dan mencatat migration yang sudah diterapkan. Seeder mengisi data contoh. Setiap collaborator menjalankan langkah ini di MySQL lokal masing-masing.
 
 ### 5. Menjalankan Server
 * Mode Development (dengan hot-reload):
