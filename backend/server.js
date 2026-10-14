@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const path = require('path');
 
 // Import Middleware Error Handler
 const { errorHandler, notFoundHandler } = require('./src/lib/errorHandler');
@@ -15,6 +16,7 @@ const customerRoutes = require('./src/routes/customerRoutes');
 const subscriptionRoutes = require('./src/routes/subscriptionRoutes');
 const faqRoutes = require('./src/routes/faqRoutes');
 const authRoutes = require('./src/routes/authRoutes');
+const uploadRoutes = require('./src/routes/uploadRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -42,6 +44,9 @@ app.use(express.json());
 // c. Logger Request (Morgan)
 app.use(morgan('dev'));
 
+// d. File Statis untuk Gambar Upload
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+
 // ==========================================
 // 2. Health Check Root
 // ==========================================
@@ -59,6 +64,7 @@ app.get('/', (req, res) => {
       subscriptions: '/api/subscriptions',
       faqs: '/api/faqs',
       auth: '/api/auth',
+      upload: '/api/upload',
     },
   });
 });
@@ -74,6 +80,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/faqs', faqRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // ==========================================
 // 4. Handler 404 (Membalas JSON)
