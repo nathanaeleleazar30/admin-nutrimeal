@@ -359,10 +359,11 @@ const authController = {
         password: password,
       });
 
-      // Jangan berikan token otomatis agar customer diarahkan untuk login terlebih dahulu
+      const token = `token_customer_${newCustomer.id}_${Date.now()}`;
+
       return res.status(201).json({
         success: true,
-        message: 'Pendaftaran berhasil. Silakan masuk menggunakan akun baru Anda.',
+        message: 'Pendaftaran berhasil. Akun Anda telah tersimpan di sistem.',
         data: {
           customer: {
             id: newCustomer.id,
@@ -372,7 +373,7 @@ const authController = {
             address: newCustomer.address,
             avatar_url: newCustomer.avatar_url || null,
           },
-          token: null,
+          token,
         },
       });
     } catch (error) {
