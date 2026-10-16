@@ -384,6 +384,7 @@ export default function AdminMenuPage() {
                 <label className="font-semibold text-slate-700 block mb-1">URL Foto Makanan</label>
                 <input
                   type="url"
+                  name="image_url"
                   value={formImageUrl}
                   onChange={(e) => setFormImageUrl(e.target.value)}
                   placeholder="https://..."
