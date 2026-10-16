@@ -448,6 +448,7 @@ export default function AdminMenuPage() {
 
               {/* Image Input Section (Upload dari Device / URL Link) */}
               <div>
+
                 <div className="flex items-center justify-between mb-2">
                   <label className="font-semibold text-slate-700 block">
                     Foto Menu Masakan *
@@ -553,14 +554,16 @@ export default function AdminMenuPage() {
                   </div>
                 ) : (
                   <div>
+                    <label className="font-semibold text-slate-700 block mb-1">URL Foto Makanan</label>
                     <input
                       type="url"
+                      name="image_url"
                       value={formImageUrl}
                       onChange={(e) => {
                         setFormImageUrl(e.target.value);
                         setImagePreview(e.target.value);
                       }}
-                      placeholder="https://images.unsplash.com/..."
+                      placeholder="https://..."
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white"
                     />
                     {formImageUrl && (
