@@ -178,6 +178,12 @@ export function OrderDetailView({ initialOrder }: OrderDetailViewProps) {
                   <p className="mt-0.5">{order.kitchen_notes}</p>
                 </div>
               )}
+
+              {order.courier_notes?.includes('Zero-Waste') && (
+                <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-1.5 font-semibold">
+                  <span>🌱 Preferensi Ramah Lingkungan: Bebas Sendok/Garpu Plastik (Zero-Waste).</span>
+                </div>
+              )}
             </div>
           </div>
 

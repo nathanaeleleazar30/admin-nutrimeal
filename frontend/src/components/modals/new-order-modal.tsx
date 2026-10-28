@@ -36,6 +36,8 @@ export function NewOrderModal({ isOpen, onClose, onOrderCreated }: NewOrderModal
     paymentMethod: string;
     totalPrice: number;
     notes: string;
+    isZeroWaste: boolean;
+    voucherCode: string;
   }>({
     customerName: '',
     customerPhone: '',
@@ -48,9 +50,11 @@ export function NewOrderModal({ isOpen, onClose, onOrderCreated }: NewOrderModal
     deliverySchedule: '11:30 - 13:00 WIB',
     deliveryBatch: 'Pagi/Siang',
     day: 'Senin',
-    paymentMethod: 'Bank Transfer (BCA)',
+    paymentMethod: 'QRIS Instant Pay',
     totalPrice: 45000,
     notes: '',
+    isZeroWaste: true,
+    voucherCode: '',
   });
 
   if (!isOpen) return null;
@@ -91,7 +95,11 @@ export function NewOrderModal({ isOpen, onClose, onOrderCreated }: NewOrderModal
           ...formData,
           packageName: formData.menuName, // backward compatibility
           packageDetail: formData.menuDetail,
-          courierNotes: formData.addressDetail ? `Titik serah: ${formData.addressDetail}` : '',
+          courierNotes: [
+            formData.addressDetail ? `Titik serah: ${formData.addressDetail}` : '',
+            formData.isZeroWaste ? 'Zero-Waste (Tanpa Alat Makan Plastik)' : '',
+            formData.voucherCode ? `Voucher Promo: ${formData.voucherCode}` : '',
+          ].filter(Boolean).join(' • '),
         }),
       });
       const data = await res.json();
@@ -286,18 +294,49 @@ export function NewOrderModal({ isOpen, onClose, onOrderCreated }: NewOrderModal
           </div>
 
           <div>
-            <label className="font-semibold text-slate-700 block mb-1">Metode Pembayaran</label>
+            <label className="font-semibold text-slate-700 block mb-1">Metode Pembayaran (Sinkron Mobile App)</label>
             <select
               value={formData.paymentMethod}
               onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
               className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-emerald-700 text-xs bg-white"
             >
-              <option value="Bank Transfer (BCA KlikPay)">Bank Transfer (BCA KlikPay)</option>
-              <option value="Bank Transfer (BCA VA)">Bank Transfer (BCA VA)</option>
-              <option value="QRIS (ShopeePay)">QRIS (ShopeePay)</option>
+              <option value="QRIS Instant Pay">QRIS Instant Pay (Semua E-Wallet & M-Banking)</option>
+              <option value="BCA Virtual Account">BCA Virtual Account</option>
+              <option value="Mandiri Virtual Account">Mandiri Virtual Account</option>
+              <option value="BRI Virtual Account">BRI Virtual Account</option>
+              <option value="BNI Virtual Account">BNI Virtual Account</option>
               <option value="E-Wallet (GoPay)">E-Wallet (GoPay)</option>
-              <option value="Bank Transfer (Mandiri)">Bank Transfer (Mandiri)</option>
+              <option value="E-Wallet (OVO)">E-Wallet (OVO)</option>
+              <option value="E-Wallet (DANA)">E-Wallet (DANA)</option>
+              <option value="E-Wallet (ShopeePay)">E-Wallet (ShopeePay)</option>
+              <option value="COD (Bayar di Tempat)">COD (Bayar di Tempat)</option>
+              <option value="Kartu Kredit / Debit (Visa/Mastercard)">Kartu Kredit / Debit (Visa/Mastercard)</option>
             </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="font-semibold text-slate-700 block mb-1">Voucher Promo (Opsional)</label>
+              <input
+                type="text"
+                placeholder="Contoh: NUTRI15K, FREEONGKIR"
+                value={formData.voucherCode}
+                onChange={(e) => setFormData({ ...formData, voucherCode: e.target.value.toUpperCase() })}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-emerald-700 text-xs uppercase font-mono"
+              />
+            </div>
+            <div>
+              <label className="font-semibold text-slate-700 block mb-1">Preferensi Cutlery</label>
+              <label className="flex items-center gap-2 mt-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isZeroWaste}
+                  onChange={(e) => setFormData({ ...formData, isZeroWaste: e.target.checked })}
+                  className="rounded border-slate-300 text-emerald-700 focus:ring-emerald-500 w-4 h-4"
+                />
+                <span className="text-[11px] font-medium text-slate-700">🌱 Zero-Waste (Tanpa Alat Makan Plastik)</span>
+              </label>
+            </div>
           </div>
 
           <div>

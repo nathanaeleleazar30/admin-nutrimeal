@@ -78,8 +78,8 @@ export default function AdminPackagesPage() {
     setFormName('');
     setFormType('Mingguan');
     setFormDescription('');
-    setFormPrice(350000);
-    setFormPortions('10 Porsi (Makan Siang & Malam)');
+    setFormPrice(175000);
+    setFormPortions('14x Makan (Siang & Malam)');
     setFormTarget('Personal');
     setFormMeals('');
     setFormColor('#059669');

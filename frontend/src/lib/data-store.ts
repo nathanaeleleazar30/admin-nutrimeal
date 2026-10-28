@@ -264,48 +264,63 @@ class NutriMealDatabase {
   public packages: CateringPackage[] = [
     {
       id: 'pkg-1',
-      name: 'Paket Sehat Diet',
+      name: 'Paket Mingguan (Trial)',
       type: 'Mingguan',
       description:
-        'Paket makanan sehat defisit kalori seimbang dengan kontrol karbohidrat dan protein tinggi.',
-      price: 350000,
-      portions: '10 Porsi (Makan Siang & Malam)',
+        'Paket trial 7 hari untuk 14x makan (Siang & Malam). Cocok bagi yang baru mencoba gaya hidup sehat.',
+      price: 175000,
+      portions: '14x Makan (Siang & Malam)',
       portionCount: 600,
       targetAudience: 'Personal',
       salesCount: 600,
       percentage: 42,
       color: '#059669', // Emerald
-      includedMeals: ['Grilled Chicken', 'Chicken Salad', 'Chicken Wrap'],
+      includedMeals: ['Grilled Chicken', 'Chicken Salad', 'Pepes Tongkol'],
     },
     {
       id: 'pkg-2',
-      name: 'Paket Makan Siang Kantor',
-      type: 'Harian',
+      name: 'Paket Bulanan Lengkap',
+      type: 'Bulanan',
       description:
-        'Solusi makan siang bergizi untuk tim perusahaan dengan porsi pas dan higienis.',
-      price: 525000,
-      portions: '15 Box Prasmanan Mini',
-      portionCount: 443,
-      targetAudience: 'Korporat / Kantor',
-      salesCount: 443,
-      percentage: 31,
-      color: '#0284c7', // Sky blue
-      includedMeals: ['Beef Veggie', 'Ayam Bowl', 'Grilled Chicken'],
+        'Paket paling populer hemat 35%! 30 hari penuh untuk 60x makan siang & malam dengan rotasi menu variatif.',
+      price: 650000,
+      portions: '60x Makan (Siang & Malam)',
+      portionCount: 840,
+      targetAudience: 'Personal',
+      salesCount: 840,
+      percentage: 38,
+      color: '#059669', // Emerald
+      includedMeals: ['Grilled Chicken', 'Cheesy Chicken', 'Beef Brokoli', 'Pepes Tongkol'],
     },
     {
       id: 'pkg-3',
-      name: 'Paket Family 5 Hari',
+      name: 'Paket Hemat Siang (Khusus Kantor)',
+      type: 'Bulanan',
+      description:
+        '30 Hari • 30x makan (1x makan siang/hari). Solusi makan siang bergizi langsung tiba di meja kantor.',
+      price: 400000,
+      portions: '30x Makan Siang Kantor',
+      portionCount: 443,
+      targetAudience: 'Korporat / Kantor',
+      salesCount: 443,
+      percentage: 26,
+      color: '#0284c7', // Sky blue
+      includedMeals: ['Beef Veggie', 'Chicken Kare', 'Grilled Chicken'],
+    },
+    {
+      id: 'pkg-4',
+      name: 'Paket Family Sehat 5 Hari',
       type: 'Mingguan',
       description:
-        'Menu santap bersama keluarga untuk 4 orang setiap hari Senin hingga Jumat.',
+        'Menu santap bersama keluarga untuk 4 orang setiap hari Senin hingga Jumat dengan lauk pauk tinggi serat.',
       price: 680000,
-      portions: 'Lengkap 4 Porsi Keluarga',
+      portions: 'Lengkap 4 Porsi Keluarga (20 Box)',
       portionCount: 257,
       targetAudience: 'Keluarga',
       salesCount: 257,
       percentage: 18,
       color: '#d97706', // Amber
-      includedMeals: ['Pepes Tongkol', 'Beef Veggie', 'Ayam Bowl'],
+      includedMeals: ['Pepes Tongkol', 'Beef Veggie', 'Ayam Bakar Madu'],
     },
     {
       id: 'pkg-4',
