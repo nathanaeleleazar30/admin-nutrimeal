@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS `meals` (
   `calories` INT NOT NULL,
   `price` INT NOT NULL,
   `discount_percent` INT NULL DEFAULT 0,
-  `image_url` VARCHAR(255) NOT NULL,
+  `image_url` TEXT NOT NULL,
   `description` TEXT NOT NULL,
   `tags` TEXT NULL,
   `schedule` VARCHAR(100) NOT NULL,
