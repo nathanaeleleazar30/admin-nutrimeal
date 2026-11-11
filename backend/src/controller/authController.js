@@ -149,6 +149,7 @@ const authController = {
       if (idToken) {
         try {
           const validAudiences = [
+            '692683965471-fhlmrbkuf99b6mo2gh366vv18g50tpc2.apps.googleusercontent.com',
             '326249737628-v0qtts2k6an7pgap2r6qo70bk0n3r81j.apps.googleusercontent.com',
             '326249737628-2glmsskab2ds7pe1p4f76hff1sp45vh3.apps.googleusercontent.com',
             process.env.GOOGLE_CLIENT_ID,
