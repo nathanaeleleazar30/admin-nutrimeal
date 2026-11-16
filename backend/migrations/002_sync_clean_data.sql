@@ -128,3 +128,4 @@ ON DUPLICATE KEY UPDATE
   `pause_reason` = VALUES(`pause_reason`),
   `auto_renew` = VALUES(`auto_renew`),
   `address` = VALUES(`address`);
+
