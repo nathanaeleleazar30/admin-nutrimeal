@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CateringOrder, OrderStatus } from '@/lib/data-store';
-import { Clock, Eye, CheckCircle2, ChevronRight, ChevronLeft, MoreHorizontal } from 'lucide-react';
+import { Clock, Eye, CheckCircle2, ChevronRight, ChevronLeft } from 'lucide-react';
 
 interface OrdersTableProps {
   initialOrders?: CateringOrder[];
@@ -10,80 +10,13 @@ interface OrdersTableProps {
 }
 
 export function OrdersTable({ initialOrders, onSelectOrder }: OrdersTableProps) {
-  const [orders, setOrders] = useState<CateringOrder[]>(
-    initialOrders || [
-      {
-        id: 'ORD-1042',
-        customerName: 'Dimas Pratama',
-        customerPhone: '0812-8890-1122',
-        customerAddress: 'Jl. Soekarno Hatta No. 45, Lowokwaru, Malang',
-        customerType: 'Personal',
-        packageName: 'Paket Diet Sehat Mingguan',
-        packageDetail: '10 Porsi (Makan Siang & Malam)',
-        deliverySchedule: 'Siang (11:30 WIB)',
-        deliveryBatch: 'Pagi/Siang',
-        status: 'Dikirim',
-        totalPrice: 350000,
-        createdAt: '2024-10-24T10:15:00Z',
-      },
-      {
-        id: 'ORD-1043',
-        customerName: 'Amanda Putri',
-        customerPhone: '0858-7702-9901',
-        customerAddress: 'Gedung Graha Pena Lt. 4, Jl. Ahmad Yani, Malang',
-        customerType: 'Korporat / Kantor',
-        packageName: 'Paket Makan Siang Kantor',
-        packageDetail: '15 Box Prasmanan Mini',
-        deliverySchedule: 'Siang (11:45 WIB)',
-        deliveryBatch: 'Pagi/Siang',
-        status: 'Diproses',
-        totalPrice: 525000,
-        createdAt: '2024-10-24T10:30:00Z',
-      },
-      {
-        id: 'ORD-1044',
-        customerName: 'Dr. Rio Wicaksono',
-        customerPhone: '0819-3331-4455',
-        customerAddress: 'Perumahan Permata Jingga Blok D-12, Malang',
-        customerType: 'Keluarga',
-        packageName: 'Paket Family 5 Hari',
-        packageDetail: 'Lengkap 4 Porsi Keluarga',
-        deliverySchedule: 'Sore (16:30 WIB)',
-        deliveryBatch: 'Sore/Malam',
-        status: 'Diterima',
-        totalPrice: 680000,
-        createdAt: '2024-10-24T11:00:00Z',
-      },
-      {
-        id: 'ORD-1045',
-        customerName: 'PT Maju Bersama (Citra)',
-        customerPhone: '0821-6577-8898',
-        customerAddress: 'Kawasan Industri Rungkut / Arjosari Malang',
-        customerType: 'Korporat / Kantor',
-        packageName: 'Prasmanan Rapat Kantor',
-        packageDetail: '25 Porsi Buffet Set',
-        deliverySchedule: 'Siang (12:00 WIB)',
-        deliveryBatch: 'Pagi/Siang',
-        status: 'Selesai',
-        totalPrice: 1125000,
-        createdAt: '2024-10-24T08:00:00Z',
-      },
-      {
-        id: 'ORD-1046',
-        customerName: 'Kevin Tan',
-        customerPhone: '0877-6411-2233',
-        customerAddress: 'Apartemen Begawan Lt. 12 No. 04, Malang',
-        customerType: 'Personal',
-        packageName: 'Paket Diet Sehat Mingguan',
-        packageDetail: '5 Porsi Makan Siang',
-        deliverySchedule: 'Siang (11:30 WIB)',
-        deliveryBatch: 'Pagi/Siang',
-        status: 'Dikirim',
-        totalPrice: 185000,
-        createdAt: '2024-10-24T09:40:00Z',
-      },
-    ]
-  );
+  const [orders, setOrders] = useState<CateringOrder[]>(initialOrders || []);
+
+  useEffect(() => {
+    if (initialOrders) {
+      setOrders(initialOrders);
+    }
+  }, [initialOrders]);
 
   const [activeTab, setActiveTab] = useState<'Semua' | OrderStatus>('Semua');
   const [currentPage, setCurrentPage] = useState(1);
@@ -188,7 +121,7 @@ export function OrdersTable({ initialOrders, onSelectOrder }: OrdersTableProps) 
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                {tab === 'Semua' ? `Semua (142)` : tab}
+                {tab === 'Semua' ? `Semua (${orders.length})` : `${tab} (${count})`}
               </button>
             );
           })}
@@ -212,8 +145,8 @@ export function OrdersTable({ initialOrders, onSelectOrder }: OrdersTableProps) 
           <tbody className="divide-y divide-slate-100 text-slate-700">
             {filteredOrders.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-slate-400">
-                  Tidak ada pesanan dengan status {activeTab}
+                <td colSpan={7} className="py-12 text-center text-slate-400">
+                  Belum ada pesanan katering masuk
                 </td>
               </tr>
             ) : (
@@ -309,8 +242,8 @@ export function OrdersTable({ initialOrders, onSelectOrder }: OrdersTableProps) 
       {/* Pagination Footer */}
       <div className="p-4 border-t border-slate-100 bg-slate-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500">
         <div>
-          Menampilkan <span className="font-bold text-slate-800">5</span> dari{' '}
-          <span className="font-bold text-slate-800">142</span> pesanan katering
+          Menampilkan <span className="font-bold text-slate-800">{filteredOrders.length}</span> dari{' '}
+          <span className="font-bold text-slate-800">{orders.length}</span> pesanan katering
         </div>
 
         <div className="flex items-center gap-1 self-center">
@@ -321,33 +254,14 @@ export function OrdersTable({ initialOrders, onSelectOrder }: OrdersTableProps) 
           >
             <ChevronLeft className="w-3.5 h-3.5" />
           </button>
-          {[1, 2, 3].map((page) => (
-            <button
-              key={page}
-              onClick={() => setCurrentPage(page)}
-              className={`w-7 h-7 rounded-md font-medium text-xs transition-colors ${
-                currentPage === page
-                  ? 'bg-emerald-800 text-white font-bold'
-                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              {page}
-            </button>
-          ))}
-          <span className="px-1 text-slate-400">...</span>
           <button
-            onClick={() => setCurrentPage(29)}
-            className={`w-7 h-7 rounded-md font-medium text-xs transition-colors ${
-              currentPage === 29
-                ? 'bg-emerald-800 text-white font-bold'
-                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-            }`}
+            className="w-7 h-7 rounded-md font-medium text-xs bg-emerald-800 text-white font-bold"
           >
-            29
+            1
           </button>
           <button
-            onClick={() => setCurrentPage(Math.min(29, currentPage + 1))}
-            className="p-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-600"
+            className="p-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-50"
+            disabled={true}
           >
             <ChevronRight className="w-3.5 h-3.5" />
           </button>

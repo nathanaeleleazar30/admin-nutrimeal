@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HeaderBanner } from '@/components/dashboard/header-banner';
 import { StatCards } from '@/components/dashboard/stat-cards';
 import { QuickActions } from '@/components/dashboard/quick-actions';
@@ -17,10 +17,42 @@ export function DashboardView() {
   const [selectedOrder, setSelectedOrder] = useState<CateringOrder | null>(null);
   const [isNewOrderModalOpen, setIsNewOrderModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [orders, setOrders] = useState<CateringOrder[]>([]);
+
+  const fetchDashboardData = async () => {
+    try {
+      const [analyticsRes, ordersRes] = await Promise.all([
+        fetch('/api/analytics'),
+        fetch('/api/orders'),
+      ]);
+
+      if (analyticsRes.ok) {
+        const json = await analyticsRes.json();
+        if (json.success && json.data) {
+          setAnalyticsData(json.data);
+        }
+      }
+
+      if (ordersRes.ok) {
+        const json = await ordersRes.json();
+        if (json.success && Array.isArray(json.data)) {
+          setOrders(json.data);
+        }
+      }
+    } catch (err) {
+      console.warn('Gagal memuat data dashboard real-time:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
   const handleOrderCreated = (order: CateringOrder) => {
     setIsNewOrderModalOpen(false);
     setSelectedOrder(order);
+    fetchDashboardData();
   };
 
   const handleStatusChange = async (orderId: string, status: OrderStatus) => {
@@ -33,6 +65,7 @@ export function DashboardView() {
       if (selectedOrder && selectedOrder.id === orderId) {
         setSelectedOrder({ ...selectedOrder, status });
       }
+      fetchDashboardData();
     } catch {
       if (selectedOrder && selectedOrder.id === orderId) {
         setSelectedOrder({ ...selectedOrder, status });
@@ -49,7 +82,7 @@ export function DashboardView() {
       />
 
       {/* 2. Top 4 KPI Stat Cards */}
-      <StatCards />
+      <StatCards stats={analyticsData?.kpi} />
 
       {/* 3. Quick Action Cards */}
       <QuickActions />
@@ -63,13 +96,19 @@ export function DashboardView() {
 
         {/* Right Column (4 cols): Menu Terlaris & Jadwal Kirim */}
         <div className="lg:col-span-4 space-y-4">
-          <DonutPackageSales />
+          <DonutPackageSales 
+            totalPortions={analyticsData?.packageDonut?.totalSoldPortions}
+            categories={analyticsData?.packageDonut?.categories}
+          />
           <DeliveryBatches />
         </div>
       </div>
 
       {/* 5. Bottom Section: Catering Orders Table */}
-      <OrdersTable onSelectOrder={(order) => setSelectedOrder(order)} />
+      <OrdersTable 
+        initialOrders={orders.length > 0 ? orders : undefined}
+        onSelectOrder={(order) => setSelectedOrder(order)} 
+      />
 
       {/* Modals */}
       <OrderDetailModal
