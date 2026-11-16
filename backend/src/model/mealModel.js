@@ -2,7 +2,7 @@ const pool = require('../lib/db');
 
 // Model adalah SATU-SATUNYA tempat query SQL ke database dengan placeholder '?'
 const mealModel = {
-  async getAll({ category, search }) {
+  async getAll({ category, search } = {}) {
     let sql = 'SELECT * FROM meals WHERE 1=1';
     const params = [];
 
