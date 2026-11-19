@@ -1,4 +1,4 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -89,6 +89,7 @@ app.use(errorHandler);
 // 6. Jalankan Server
 // ==========================================
 app.listen(PORT, () => {
-  console.log(`🚀 Server NutriMeal Backend berjalan pada port http://localhost:${PORT}`);
-  console.log(`📋 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`ðŸš€ Server NutriMeal Backend berjalan pada port http://localhost:${PORT}`);
+  console.log(`ðŸ“‹ Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+

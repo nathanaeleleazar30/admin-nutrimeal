@@ -1,4 +1,4 @@
-const pool = require('../lib/db');
+﻿const pool = require('../lib/db');
 
 const customerModel = {
   async getAll(search) {
@@ -212,3 +212,4 @@ const customerModel = {
 };
 
 module.exports = customerModel;
+

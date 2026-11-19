@@ -1,4 +1,4 @@
-const customerModel = require('../model/customerModel');
+﻿const customerModel = require('../model/customerModel');
 
 const customerController = {
   // GET /api/customers
@@ -100,3 +100,4 @@ const customerController = {
 };
 
 module.exports = customerController;
+
