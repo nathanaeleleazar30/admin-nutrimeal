@@ -230,3 +230,19 @@ INSERT INTO `faqs` (`id`, `category`, `question`, `answer`, `is_active`) VALUES
 ('faq-1', 'Pemesanan', 'Bagaimana cara berlangganan katering harian atau mingguan?', 'Pilih paket katering di katalog langganan, tentukan durasi pengiriman, pilih slot jam makan (siang/malam), lalu lakukan pembayaran checkout.', 1),
 ('faq-2', 'Pengiriman', 'Kapan jam batas pengantaran makanan tiba di alamat?', 'Batch Siang dikirim antara 10:30 - 13:00 WIB, sedangkan Batch Sore/Malam tiba pukul 16:30 - 18:00 WIB sesuai preferensi Anda.', 1),
 ('faq-3', 'Diet & Alergi', 'Apakah menu bisa dicustom untuk alergen tertentu?', 'Bisa. Harap isi catatan alergi pada profil atau catatan pesanan saat checkout agar koki dapur kami menyesuaikan bahan masakannya.', 1);
+
+-- --------------------------------------------------------
+-- 9. Tabel: notifications
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `notifications` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `customer_id` VARCHAR(50) NOT NULL,
+  `title` VARCHAR(255) NOT NULL,
+  `body` TEXT NOT NULL,
+  `type` VARCHAR(50) NOT NULL DEFAULT "general",
+  `route` VARCHAR(100) NOT NULL DEFAULT "/notifikasi",
+  `is_read` BOOLEAN NOT NULL DEFAULT FALSE,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_notifications_customer` (`customer_id`),
+  INDEX `idx_notifications_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
