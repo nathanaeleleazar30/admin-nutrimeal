@@ -110,6 +110,41 @@ const customerController = {
       next(error);
     }
   },
+
+  // POST /api/customers/fcm-token
+  async updateFcmToken(req, res, next) {
+    try {
+      const { customerId, email, fcmToken } = req.body;
+      if (!fcmToken) {
+        return res.status(400).json({
+          success: false,
+          message: 'fcmToken wajib diisi',
+        });
+      }
+
+      let targetId = customerId;
+      if (!targetId && email) {
+        const customer = await customerModel.findByEmail(email);
+        targetId = customer?.id;
+      }
+
+      if (!targetId) {
+        return res.status(400).json({
+          success: false,
+          message: 'customerId atau email pelanggan tidak ditemukan',
+        });
+      }
+
+      await customerModel.updateFcmToken(targetId, fcmToken);
+
+      res.status(200).json({
+        success: true,
+        message: 'Token FCM pelanggan berhasil diperbarui',
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
 
 module.exports = customerController;

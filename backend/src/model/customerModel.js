@@ -230,6 +230,12 @@ const customerModel = {
     const [result] = await pool.query(sql, [id]);
     return result.affectedRows > 0;
   },
+
+  async updateFcmToken(id, fcmToken) {
+    const sql = 'UPDATE customers SET fcm_token = ? WHERE id = ?';
+    const [result] = await pool.query(sql, [fcmToken, id]);
+    return result.affectedRows > 0;
+  },
 };
 
 module.exports = customerModel;
