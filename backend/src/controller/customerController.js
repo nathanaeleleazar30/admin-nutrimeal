@@ -1,4 +1,4 @@
-﻿const customerModel = require('../model/customerModel');
+const customerModel = require('../model/customerModel');
 
 const customerController = {
   // GET /api/customers
@@ -91,6 +91,36 @@ const customerController = {
     }
   },
 
+  // POST /api/customers/fcm-token
+  async updateFcmToken(req, res, next) {
+    try {
+      const { customer_id, fcm_token } = req.body;
+      if (!customer_id || !fcm_token) {
+        return res.status(400).json({
+          success: false,
+          message: 'Field customer_id dan fcm_token wajib diisi',
+        });
+      }
+
+      const existing = await customerModel.getById(customer_id);
+      if (!existing) {
+        return res.status(404).json({
+          success: false,
+          message: `Pelanggan dengan ID ${customer_id} tidak ditemukan`,
+        });
+      }
+
+      const updated = await customerModel.update(customer_id, { fcm_token });
+      res.status(200).json({
+        success: true,
+        message: 'FCM token berhasil diperbarui',
+        data: updated,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // DELETE /api/customers/:id
   async delete(req, res, next) {
     try {
@@ -105,41 +135,6 @@ const customerController = {
       res.status(200).json({
         success: true,
         message: 'Pelanggan berhasil dihapus',
-      });
-    } catch (error) {
-      next(error);
-    }
-  },
-
-  // POST /api/customers/fcm-token
-  async updateFcmToken(req, res, next) {
-    try {
-      const { customerId, email, fcmToken } = req.body;
-      if (!fcmToken) {
-        return res.status(400).json({
-          success: false,
-          message: 'fcmToken wajib diisi',
-        });
-      }
-
-      let targetId = customerId;
-      if (!targetId && email) {
-        const customer = await customerModel.findByEmail(email);
-        targetId = customer?.id;
-      }
-
-      if (!targetId) {
-        return res.status(400).json({
-          success: false,
-          message: 'customerId atau email pelanggan tidak ditemukan',
-        });
-      }
-
-      await customerModel.updateFcmToken(targetId, fcmToken);
-
-      res.status(200).json({
-        success: true,
-        message: 'Token FCM pelanggan berhasil diperbarui',
       });
     } catch (error) {
       next(error);
