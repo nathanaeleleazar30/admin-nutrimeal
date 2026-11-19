@@ -175,15 +175,30 @@ const customerModel = {
 
     const allergiesStr = data.allergies !== undefined
       ? Array.isArray(data.allergies) ? data.allergies.join(', ') : data.allergies
-      : existing.allergies.join(', ');
+      : (Array.isArray(existing.allergies) ? existing.allergies.join(', ') : existing.allergies || '');
 
     const dietaryStr = data.dietary_goals !== undefined
       ? Array.isArray(data.dietary_goals) ? data.dietary_goals.join(', ') : data.dietary_goals
-      : existing.dietary_goals.join(', ');
+      : (Array.isArray(existing.dietary_goals) ? existing.dietary_goals.join(', ') : existing.dietary_goals || '');
 
     const sql = `
       UPDATE customers
-      SET name = ?, email = ?, phone = ?, address = ?, type = ?, company_name = ?, active_subscription = ?, allergies = ?, dietary_goals = ?, target_calories = ?
+      SET name = ?,
+          email = ?,
+          phone = ?,
+          address = ?,
+          avatar_url = ?,
+          password = ?,
+          type = ?,
+          company_name = ?,
+          active_subscription = ?,
+          allergies = ?,
+          dietary_goals = ?,
+          target_calories = ?,
+          height_cm = ?,
+          weight_kg = ?,
+          age = ?,
+          two_factor_auth = ?
       WHERE id = ?
     `;
     const params = [
@@ -191,12 +206,18 @@ const customerModel = {
       data.email !== undefined ? data.email : existing.email,
       data.phone !== undefined ? data.phone : existing.phone,
       data.address !== undefined ? data.address : existing.address,
+      data.avatar_url !== undefined ? data.avatar_url : (existing.avatar_url || null),
+      data.password !== undefined ? data.password : existing.password,
       data.type !== undefined ? data.type : existing.type,
       data.company_name !== undefined ? data.company_name : existing.company_name,
       data.active_subscription !== undefined ? data.active_subscription : existing.active_subscription,
       allergiesStr,
       dietaryStr,
       data.target_calories !== undefined ? Number(data.target_calories) : existing.target_calories,
+      data.height_cm !== undefined ? Number(data.height_cm) : (existing.height_cm || 163.0),
+      data.weight_kg !== undefined ? Number(data.weight_kg) : (existing.weight_kg || 52.0),
+      data.age !== undefined ? Number(data.age) : (existing.age || 24),
+      data.two_factor_auth !== undefined ? (data.two_factor_auth ? 1 : 0) : (existing.two_factor_auth !== undefined ? (existing.two_factor_auth ? 1 : 0) : 1),
       id,
     ];
 

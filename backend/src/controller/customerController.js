@@ -61,13 +61,26 @@ const customerController = {
   async update(req, res, next) {
     try {
       const { id } = req.params;
-      const updated = await customerModel.update(id, req.body);
-      if (!updated) {
+      const existing = await customerModel.getById(id);
+      if (!existing) {
         return res.status(404).json({
           success: false,
           message: `Pelanggan dengan ID ${id} tidak ditemukan`,
         });
       }
+
+      // Validasi kata sandi jika melakukan ubah password
+      if (req.body.new_password) {
+        if (existing.password && req.body.old_password && existing.password !== req.body.old_password) {
+          return res.status(400).json({
+            success: false,
+            message: 'Kata sandi saat ini tidak cocok.',
+          });
+        }
+        req.body.password = req.body.new_password;
+      }
+
+      const updated = await customerModel.update(id, req.body);
       res.status(200).json({
         success: true,
         message: 'Data pelanggan berhasil diperbarui',

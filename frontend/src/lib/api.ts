@@ -11,7 +11,9 @@ import {
 } from '@/types';
 
 // URL API Express dari environment variable (default: port 5000)
-const API_BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE_URL = (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000')
+  .replace(/\/api\/?$/, '')
+  .replace(/\/$/, '');
 
 /**
  * Helper fetch aman untuk pemanggilan ke Express Backend

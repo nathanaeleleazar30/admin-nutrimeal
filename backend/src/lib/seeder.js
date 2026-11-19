@@ -19,6 +19,7 @@ async function runSeeder() {
       user,
       password,
       port,
+      multipleStatements: true,
     });
 
     console.log(`📡 Terhubung ke MySQL server (${host}:${port})`);
@@ -52,6 +53,7 @@ async function runSeeder() {
         \`id\` VARCHAR(50) NOT NULL,
         \`name\` VARCHAR(100) NOT NULL,
         \`email\` VARCHAR(100) NOT NULL UNIQUE,
+        \`password\` VARCHAR(255) NULL,
         \`google_id\` VARCHAR(100) NULL,
         \`avatar_url\` TEXT NULL,
         \`phone\` VARCHAR(25) NOT NULL DEFAULT '',
@@ -213,41 +215,73 @@ async function runSeeder() {
 
     console.log('✅ Seluruh tabel berhasil dibuat / sudah ada.');
 
-    // 4. Seeding Data
-    console.log('🌱 Menyuntikkan data seed awal...');
+    // 4. Bersihkan data dummy lama (orders, vouchers, faqs, dummy customers/subs)
+    console.log('🧹 Membersihkan data dummy (orders, vouchers, faqs, customers dummy)...');
+    await connection.query('DELETE FROM `orders`');
+    await connection.query('DELETE FROM `vouchers`');
+    await connection.query('DELETE FROM `faqs`');
+    await connection.query("DELETE FROM `subscriptions` WHERE `id` NOT IN ('sub-nael', 'sub-raihan')");
+    await connection.query("DELETE FROM `customers` WHERE `id` IN ('cst-1', 'cst-2', 'cst-3', 'cst-4', 'cst-5')");
+
+    // 5. Seeding Data Bersih
+    console.log('🌱 Menyuntikkan data bersih (admins, customers riil, meals, packages, langganan aktif)...');
 
     // a. Admins Seed
     const admins = [
       ['adm-1', 'Nathanael', 'nathanael@nutrimeal.id', 'nathanael123', 'superadmin'],
       ['adm-2', 'Siti Saroh', 'siti.admin@nutrimeal.id', 'admin123', 'admin'],
+      ['adm-1791733107152', 'Admin Test', 'admin.test@nutrimeal.id', 'Test1234', 'admin'],
     ];
     for (const a of admins) {
       await connection.query(
-        'INSERT INTO `admins` (`id`, `name`, `email`, `password`, `role`) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `password` = VALUES(`password`), `name` = VALUES(`name`);',
+        'INSERT INTO `admins` (`id`, `name`, `email`, `password`, `role`) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `password` = VALUES(`password`), `name` = VALUES(`name`), `role` = VALUES(`role`);',
         a
       );
     }
     console.log(`✅ Admins seeded: ${admins.length} akun`);
 
-    // b. Customers Seed
+    // b. Customers Seed (8 Akun Riil Terdaftar)
     const customers = [
-      ['cst-1', 'Dimas Pratama', 'dimas.pratama@gmail.com', '0812-8890-1122', 'Jl. Soekarno Hatta No. 45, Lowokwaru, Malang', 'Personal', null, 14, 4200000, 'Paket Diet Sehat Mingguan', 'Kacang Tanah, Udang / Seafood', 'Defisit Kalori, Tinggi Protein', 1650, '2024-03-15'],
-      ['cst-2', 'Amanda Putri', 'amanda.putri@kantor.co.id', '0858-7702-9901', 'Gedung Graha Pena Lt. 4, Jl. Ahmad Yani, Malang', 'Korporat / Kantor', 'PT Digita Kreasi Nusa', 28, 14700000, 'Paket Makan Siang Kantor', 'Gluten (Celiac)', 'Clean Eating, Less Oil & Low Sodium', 1400, '2024-01-10'],
-      ['cst-3', 'Dr. Rio Wicaksono', 'rio.wicaksono@rsud.ac.id', '0819-3331-4455', 'Perumahan Permata Jingga Blok D-12, Malang', 'Personal', null, 8, 5440000, 'Paket Family 5 Hari', 'None / Tidak Ada', 'Gizi Seimbang Keluarga, Organic Only', 2100, '2024-06-01'],
-      ['cst-4', 'Citra Kirana', 'citra.procurement@majubersama.com', '0821-6577-8898', 'Kawasan Industri Arjosari Malang', 'Korporat / Kantor', 'PT Maju Bersama', 42, 48500000, 'Prasmanan Rapat Kantor', 'None / Tidak Ada', 'Halal Certified, Executive Healthy Bento', 1800, '2023-11-20'],
-      ['cst-5', 'Kevin Tan', 'kevin.tan99@gmail.com', '0877-6411-2233', 'Apartemen Begawan Lt. 12 No. 04, Malang', 'Personal', null, 6, 1110000, 'Paket Diet Sehat Mingguan', 'Laktosa / Susu Sapi', 'Muscle Building, High Protein (120g/hari)', 2200, '2024-08-12'],
+      ['cst-1791709332848', 'Test User Google', 'test_google@student.ub.ac.id', null, null, null, '', '', 'Personal', null, 0, 0, null, '', '', 1800, '2026-10-11'],
+      ['cst-1791710995015', 'Tes User', 'test_auto_1791710994952@gmail.com', 'Password123', null, null, '08123456789', '', 'Personal', null, 0, 0, null, '', '', 1800, '2026-10-11'],
+      ['cst-1791732947116', 'Budi Test', 'budi.test@gmail.com', 'Password123', null, null, '081299988877', '', 'Personal', null, 0, 0, null, '', '', 1800, '2026-10-11'],
+      ['cst-1791734190821', 'bintang', 'bintangfatahillah12@gmail.com', 'bintang12', null, null, '87797669180', '', 'Personal', null, 0, 0, null, '', '', 1800, '2026-10-11'],
+      ['cst-1792168615665', 'jmbd', 'jmbd@gmail.com', 'jmbd1234', null, null, '83869991137', '', 'Personal', null, 0, 0, null, '', '', 1800, '2026-10-16'],
+      ['cst-1792338797831', 'bintang cuki', 'bintangjemjem2@gmail.com', 'bintang12', '111815352387836783187', 'https://lh3.googleusercontent.com/a/ACg8ocJvpR47lYxMaiFWqVpihmc4_9H_bMiEcmLa-3SZg0XMRM51OkBk=s96-c', '812319194987', '', 'Personal', null, 0, 0, null, '', '', 1800, '2026-10-18'],
+      ['cst-1792473012910', 'nael', 'nael@gmail.com', 'nael1234', null, null, '8316194848', '', 'Personal', null, 0, 0, 'Paket Bulanan Lengkap', '', '', 1800, '2026-10-20'],
+      ['cst-1794419849764', 'Raihan', 'tugasraihan.69@gmail.com', 'Hahaha01', null, null, '85745496617', '', 'Personal', null, 0, 0, 'Paket Bulanan Lengkap', '', '', 1800, '2026-11-11'],
     ];
     for (const c of customers) {
       await connection.query(
-        'INSERT INTO `customers` (`id`, `name`, `email`, `phone`, `address`, `type`, `company_name`, `total_orders`, `total_spent`, `active_subscription`, `allergies`, `dietary_goals`, `target_calories`, `joined_date`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);',
+        `INSERT INTO \`customers\` (
+          \`id\`, \`name\`, \`email\`, \`password\`, \`google_id\`, \`avatar_url\`, \`phone\`, \`address\`, \`type\`, \`company_name\`,
+          \`total_orders\`, \`total_spent\`, \`active_subscription\`, \`allergies\`, \`dietary_goals\`, \`target_calories\`, \`joined_date\`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          \`name\` = VALUES(\`name\`),
+          \`password\` = VALUES(\`password\`),
+          \`google_id\` = VALUES(\`google_id\`),
+          \`avatar_url\` = VALUES(\`avatar_url\`),
+          \`phone\` = VALUES(\`phone\`),
+          \`address\` = VALUES(\`address\`),
+          \`type\` = VALUES(\`type\`),
+          \`company_name\` = VALUES(\`company_name\`),
+          \`total_orders\` = VALUES(\`total_orders\`),
+          \`total_spent\` = VALUES(\`total_spent\`),
+          \`active_subscription\` = VALUES(\`active_subscription\`),
+          \`allergies\` = VALUES(\`allergies\`),
+          \`dietary_goals\` = VALUES(\`dietary_goals\`),
+          \`target_calories\` = VALUES(\`target_calories\`);`,
         c
       );
     }
     console.log(`✅ Customers seeded: ${customers.length} data`);
 
-    // c. Meals Seed
+    // c. Meals Seed (8 Menu Lengkap)
     const meals = [
       ['item-1', 'Grilled Chicken Salad', 'Ayam', 450, 20000, 20, 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?q=80&w=800&auto=format&fit=crop', 'Juicy Grilled Chicken, Grilled potato, Fresh Broccoli, seasoning parmesan Cheese', 'Dada Ayam Panggang, Brokoli Kukus, Parmesan Cheese', 'Setiap Hari Senin', '12:00 - 13:00 WIB', '35g', '12g', '55g', 1],
+      ['item-1792338896242', 'bintang lumajang', 'Seafood', 450, 1, 0, '/uploads/meal-WhatsApp-Image-2026--1792338882641-5091.jpeg', 'halo kak ', '', 'Setiap Hari', '12:00 - 13:00 WIB', '35g', '12g', '45g', 1],
+      ['item-1792474176533', 'hammad madiun', 'Roti', 450, 30000, 0, '/uploads/meal-WhatsApp-Image-2026--1792474163280-1835.jpeg', 'Menu katering sehat bergizi', '', 'Setiap Hari', '12:00 - 13:00 WIB', '35g', '12g', '45g', 1],
       ['item-2', 'Pepes Tongkol Rempah', 'Ikan', 380, 45000, 0, 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop', 'Pepes ikan tongkol bumbu rempah kuning kaya antioksidan dan omega-3 disajikan hangat.', 'Ikan Tongkol Segar, Kemangi, Kunyit, Nasi Merah', 'Setiap Hari Selasa', '12:00 - 13:00 WIB', '38g', '10g', '30g', 1],
       ['item-3', 'Fresh Chicken Salad', 'Ayam', 320, 30000, 0, 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=800&auto=format&fit=crop', 'Fresh green salad dengan irisan dada ayam bakar lembut, tomat ceri, dan dressing zaitun.', 'Dada Ayam, Romaine Lettuce, Tomat Ceri, Olive Oil', 'Setiap Hari Rabu', '12:00 - 13:00 WIB', '32g', '8g', '22g', 1],
       ['item-4', 'Lean Beef Veggie', 'Daging', 520, 40000, 0, 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800&auto=format&fit=crop', 'Tumis daging sapi lada hitam rendah lemak dipadu paprika renyah dan brokoli segar.', 'Daging Sapi Lean, Paprika, Brokoli, Bawang Bombay', 'Setiap Hari Kamis', '12:00 - 13:00 WIB', '42g', '15g', '40g', 1],
@@ -256,88 +290,93 @@ async function runSeeder() {
     ];
     for (const m of meals) {
       await connection.query(
-        'INSERT INTO `meals` (`id`, `name`, `category`, `calories`, `price`, `discount_percent`, `image_url`, `description`, `tags`, `schedule`, `delivery_time`, `protein`, `fat`, `carbs`, `is_available`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);',
+        `INSERT INTO \`meals\` (
+          \`id\`, \`name\`, \`category\`, \`calories\`, \`price\`, \`discount_percent\`, \`image_url\`,
+          \`description\`, \`tags\`, \`schedule\`, \`delivery_time\`, \`protein\`, \`fat\`, \`carbs\`, \`is_available\`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          \`name\` = VALUES(\`name\`),
+          \`category\` = VALUES(\`category\`),
+          \`calories\` = VALUES(\`calories\`),
+          \`price\` = VALUES(\`price\`),
+          \`discount_percent\` = VALUES(\`discount_percent\`),
+          \`image_url\` = VALUES(\`image_url\`),
+          \`description\` = VALUES(\`description\`),
+          \`tags\` = VALUES(\`tags\`),
+          \`schedule\` = VALUES(\`schedule\`),
+          \`delivery_time\` = VALUES(\`delivery_time\`),
+          \`protein\` = VALUES(\`protein\`),
+          \`fat\` = VALUES(\`fat\`),
+          \`carbs\` = VALUES(\`carbs\`),
+          \`is_available\` = VALUES(\`is_available\`);`,
         m
       );
     }
     console.log(`✅ Meals seeded: ${meals.length} menu`);
 
-    // d. Packages Seed
+    // d. Packages Seed (4 Paket)
     const packages = [
-      ['pkg-1', 'Paket Sehat Diet Mingguan', 'Mingguan', 'Paket makanan sehat defisit kalori seimbang dengan kontrol karbohidrat dan protein tinggi.', 350000, '10 Porsi (Makan Siang & Malam)', 'Personal', 600, 42, '#059669', 'Grilled Chicken Salad, Fresh Chicken Salad, Pepes Tongkol Rempah'],
-      ['pkg-2', 'Paket Makan Siang Kantor', 'Harian', 'Solusi makan siang bergizi untuk tim perusahaan dengan porsi pas dan higienis.', 525000, '15 Box Prasmanan Mini', 'Korporat / Kantor', 443, 31, '#0284c7', 'Lean Beef Veggie, Spinach Chicken Wrap, Grilled Chicken Salad'],
-      ['pkg-3', 'Paket Family Sehat 5 Hari', 'Mingguan', 'Menu variatif lengkap lauk pauk tinggi serat untuk seluruh anggota keluarga.', 680000, '20 Porsi Keluarga', 'Keluarga', 257, 18, '#d97706', 'Pepes Tongkol Rempah, Nutri Ayam Bowl, Fresh Chicken Salad'],
+      ['pkg-1', 'Paket Sehat Diet Mingguan', 'Mingguan', 'Paket makanan sehat defisit kalori seimbang dengan kontrol karbohidrat dan protein tinggi.', 350000, '10 Porsi (Makan Siang & Malam)', 'Personal', 600, 42, '#059669', 'Grilled Chicken, Chicken Salad, Pepes Tongkol'],
+      ['pkg-2', 'Paket Makan Siang Kantor', 'Harian', 'Solusi makan siang bergizi untuk tim perusahaan dengan porsi pas dan higienis.', 525000, '15 Box Prasmanan Mini', 'Korporat / Kantor', 443, 31, '#0284c7', 'Lean Beef Veggie, Chicken Wrap, Grilled Chicken'],
+      ['pkg-3', 'Paket Family Sehat 5 Hari', 'Mingguan', 'Menu variatif lengkap lauk pauk tinggi serat untuk seluruh anggota keluarga.', 680000, '20 Porsi Keluarga', 'Keluarga', 257, 18, '#d97706', 'Pepes Tongkol, Ayam Bowl, Fresh Chicken Salad'],
       ['pkg-4', 'Prasmanan Rapat & Event', 'Prasmanan / Event', 'Layanan prasmanan sehat premium untuk meeting, seminar, dan acara kantor.', 1250000, '25 Porsi Prasmanan', 'Korporat / Kantor', 128, 9, '#dc2626', 'Lean Beef Veggie, Grilled Chicken Salad, Nutri Ayam Bowl'],
     ];
     for (const p of packages) {
       await connection.query(
-        'INSERT INTO `packages` (`id`, `name`, `type`, `description`, `price`, `portions`, `target_audience`, `sales_count`, `percentage`, `color`, `included_meals`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);',
+        `INSERT INTO \`packages\` (
+          \`id\`, \`name\`, \`type\`, \`description\`, \`price\`, \`portions\`, \`target_audience\`,
+          \`sales_count\`, \`percentage\`, \`color\`, \`included_meals\`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          \`name\` = VALUES(\`name\`),
+          \`type\` = VALUES(\`type\`),
+          \`description\` = VALUES(\`description\`),
+          \`price\` = VALUES(\`price\`),
+          \`portions\` = VALUES(\`portions\`),
+          \`target_audience\` = VALUES(\`target_audience\`),
+          \`sales_count\` = VALUES(\`sales_count\`),
+          \`percentage\` = VALUES(\`percentage\`),
+          \`color\` = VALUES(\`color\`),
+          \`included_meals\` = VALUES(\`included_meals\`);`,
         p
       );
     }
     console.log(`✅ Packages seeded: ${packages.length} paket`);
 
-    // e. Vouchers Seed
-    const vouchers = [
-      ['voc-1', 'NUTRI15K', 'Diskon Rp15.000', 'nominal', 15000, null, 75000, 'NutriPay / Saldo', 'TERPILIH', 1, 100, 42, '2026-12-31'],
-      ['voc-2', 'FREEONGKIR', 'Gratis Ongkir s.d. Rp15.000', 'free_shipping', 15000, 15000, 75000, '✓ Semua Menu Diet & Katering', 'REKOMENDASI', 1, 150, 98, '2026-11-30'],
-      ['voc-3', 'DIET30', 'Diskon 30% Katering Sehat', 'percent', 30, 40000, 120000, 'Langganan Baru', '⚡ Terbatas', 1, 50, 21, '2026-10-31'],
-      ['voc-4', 'CASHBACK20', 'Cashback 20% Koin Sehat', 'cashback', 20, 10000, 50000, 'Spesial NutriPay', null, 1, 80, 35, '2026-12-31'],
-    ];
-    for (const v of vouchers) {
-      await connection.query(
-        'INSERT INTO `vouchers` (`id`, `code`, `title`, `discount_type`, `discount_value`, `max_discount`, `min_spend`, `category_tag`, `badge_text`, `is_active`, `quota`, `used_count`, `valid_until`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `title` = VALUES(`title`);',
-        v
-      );
-    }
-    console.log(`✅ Vouchers seeded: ${vouchers.length} promo`);
-
-    // f. Subscriptions Seed
+    // e. Subscriptions Seed (Langganan User Riil)
     const subscriptions = [
-      ['sub-1', 'cst-1', 'Dimas Pratama', '0812-8890-1122', 'Paket Diet Sehat Mingguan', 'Siang & Malam', '11.30 – 13.00 WIB (Slot Utama)', '2026-10-01', '2026-10-14', 4, 14, 'Aktif', null, 1, 'Jl. Soekarno Hatta No. 45, Lowokwaru, Malang'],
-      ['sub-2', 'cst-2', 'Amanda Putri', '0858-7702-9901', 'Paket Makan Siang Kantor', 'Makan Siang', '11.30 – 13.00 WIB (Slot Utama)', '2026-10-01', '2026-10-30', 21, 30, 'Aktif', null, 1, 'Gedung Graha Pena Lt. 4, PT Digita Kreasi Nusa, Malang'],
-      ['sub-3', 'cst-3', 'Dr. Rio Wicaksono', '0819-3331-4455', 'Paket Family 5 Hari', 'Siang & Malam', '12.30 – 13.30 WIB (Terakhir Siang)', '2026-10-05', '2026-10-10', 2, 5, 'Dijeda', 'Cuti / Dinas luar kota ke Surabaya', 0, 'Perumahan Permata Jingga Blok D-12, Malang'],
-      ['sub-4', 'cst-5', 'Kevin Tan', '0877-6411-2233', 'Paket Diet Sehat Mingguan', 'Makan Siang', '10.30 – 11.30 WIB (Lebih Awal)', '2026-10-08', '2026-10-15', 6, 7, 'Aktif', null, 0, 'Apartemen Begawan Lt. 12 No. 04, Malang'],
+      ['sub-nael', 'cst-1792473012910', 'nael', '08316194848', 'Paket Bulanan Lengkap', 'Siang & Malam', '11.30 – 13.00 WIB (Slot Utama)', '2026-11-01', '2026-11-30', 20, 30, 'Aktif', null, 1, 'Jl. Candi Mendut No. 5, Malang'],
+      ['sub-raihan', 'cst-1794419849764', 'Raihan', '085745496617', 'Paket Bulanan Lengkap', 'Siang & Malam', '11.30 – 13.00 WIB (Slot Utama)', '2026-11-01', '2026-11-30', 20, 30, 'Aktif', null, 1, 'Jl. Sukarno Hatta No. 10, Malang'],
     ];
     for (const s of subscriptions) {
       await connection.query(
-        'INSERT INTO `subscriptions` (`id`, `customer_id`, `customer_name`, `customer_phone`, `package_name`, `meal_slot`, `delivery_time_slot`, `start_date`, `end_date`, `days_remaining`, `total_days`, `status`, `pause_reason`, `auto_renew`, `address`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `status` = VALUES(`status`);',
+        `INSERT INTO \`subscriptions\` (
+          \`id\`, \`customer_id\`, \`customer_name\`, \`customer_phone\`, \`package_name\`,
+          \`meal_slot\`, \`delivery_time_slot\`, \`start_date\`, \`end_date\`, \`days_remaining\`,
+          \`total_days\`, \`status\`, \`pause_reason\`, \`auto_renew\`, \`address\`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          \`customer_id\` = VALUES(\`customer_id\`),
+          \`customer_name\` = VALUES(\`customer_name\`),
+          \`customer_phone\` = VALUES(\`customer_phone\`),
+          \`package_name\` = VALUES(\`package_name\`),
+          \`meal_slot\` = VALUES(\`meal_slot\`),
+          \`delivery_time_slot\` = VALUES(\`delivery_time_slot\`),
+          \`start_date\` = VALUES(\`start_date\`),
+          \`end_date\` = VALUES(\`end_date\`),
+          \`days_remaining\` = VALUES(\`days_remaining\`),
+          \`total_days\` = VALUES(\`total_days\`),
+          \`status\` = VALUES(\`status\`),
+          \`pause_reason\` = VALUES(\`pause_reason\`),
+          \`auto_renew\` = VALUES(\`auto_renew\`),
+          \`address\` = VALUES(\`address\`);`,
         s
       );
     }
     console.log(`✅ Subscriptions seeded: ${subscriptions.length} data`);
 
-    // g. Orders Seed
-    const orders = [
-      ['ORD-2025091', 'Budi Santoso', '+62 812-3456-7890', 'Menara BCA Lt. 24, Jl. MH Thamrin', 'Jakarta Pusat • Resepsionis Lantai 24', 'Korporat / Kantor', 'Paket Makan Siang Kantor', '3 Box Bento Healthy', 'Grilled Chicken Salad', 'Nasi Merah + Brokoli Kukus (3 Porsi)', 3, '11:30 - 13:00 WIB', 'Pagi/Siang', 'Senin', 'Selesai', 165000, 'Bank Transfer (BCA)', 'Lunas', 'Budi Santoso - Motor 01', 'Titip resepsionis', 'Tidak pakai saus pedas'],
-      ['ORD-2025092', 'Siti Nurhaliza', '+62 819-8765-4321', 'Apartemen Sudirman Park Tower A Unit 12B', 'Jakarta Selatan • Lobby Tower A', 'Personal', 'Paket Diet Sehat Mingguan', '1 Porsi Makan Siang', 'Pepes Tongkol Rempah', 'Nasi Merah + Lalapan (1 Porsi)', 1, '11:30 - 13:00 WIB', 'Pagi/Siang', 'Senin', 'Dikirim', 45000, 'QRIS (GoPay)', 'Lunas', 'Budi Santoso - Motor 01', 'Hubungi WA bila sampai', 'Less oil'],
-      ['ORD-2025093', 'PT Mega Solusi', '+62 821-1122-3344', 'Gedung Cyber 2 Lt. 8, Jl. HR Rasuna Said', 'Jakarta Selatan • Ruang Meeting Utama', 'Korporat / Kantor', 'Paket Makan Siang Kantor', '12 Box Bento Premium', 'Lean Beef Veggie', 'Nasi Shirataki + Tumis Jagung (12 Porsi)', 12, '11:30 - 13:00 WIB', 'Pagi/Siang', 'Senin', 'Diproses', 660000, 'Bank Transfer (Mandiri)', 'Lunas', 'Ahmad Fauzi - Motor 02', 'Antar tepat pukul 11:45 WIB', 'Sertakan tissue basah dan sendok'],
-      ['ORD-2025094', 'dr. Hendra Salim', '+62 856-1109-3321', 'Pondok Indah Golf Apartment Tower 1 Unit 15C', 'Jakarta Selatan • Medical Diet', 'Personal', 'Paket Medical Diet', '2 Porsi Makan Malam Rendah Garam', 'Grilled Chicken Salad', 'Kukus Labu Siam & Jagung (2 Porsi)', 2, '17:00 - 18:30 WIB', 'Sore/Malam', 'Senin', 'Diterima', 104000, 'E-Wallet (GoPay)', 'Lunas', 'Ahmad Fauzi - Motor 02', 'Jangan ditumpuk barang lain', 'Maksimal natrium 2g'],
-    ];
-    for (const o of orders) {
-      await connection.query(
-        'INSERT INTO `orders` (`id`, `customer_name`, `customer_phone`, `customer_address`, `address_detail`, `customer_type`, `package_name`, `package_detail`, `menu_name`, `menu_detail`, `portions_count`, `delivery_schedule`, `delivery_batch`, `day`, `status`, `total_price`, `payment_method`, `payment_status`, `courier_name`, `courier_notes`, `kitchen_notes`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `status` = VALUES(`status`);',
-        o
-      );
-    }
-    console.log(`✅ Orders seeded: ${orders.length} pesanan`);
-
-    // h. FAQs Seed
-    const faqs = [
-      ['faq-1', 'Pemesanan', 'Bagaimana cara berlangganan katering harian atau mingguan?', 'Pilih paket katering di katalog langganan, tentukan durasi pengiriman, pilih slot jam makan (siang/malam), lalu lakukan pembayaran checkout.', 1],
-      ['faq-2', 'Pengiriman', 'Kapan jam batas pengantaran makanan tiba di alamat?', 'Batch Siang dikirim antara 10:30 - 13:00 WIB, sedangkan Batch Sore/Malam tiba pukul 16:30 - 18:00 WIB sesuai preferensi Anda.', 1],
-      ['faq-3', 'Diet & Alergi', 'Apakah menu bisa dicustom untuk alergen tertentu?', 'Bisa. Harap isi catatan alergi pada profil atau catatan pesanan saat checkout agar koki dapur kami menyesuaikan bahan masakannya.', 1],
-    ];
-    for (const f of faqs) {
-      await connection.query(
-        'INSERT INTO `faqs` (`id`, `category`, `question`, `answer`, `is_active`) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `question` = VALUES(`question`);',
-        f
-      );
-    }
-    console.log(`✅ FAQs seeded: ${faqs.length} data`);
-
-    console.log('\n🎉 PROSES SEEDING SELESAI SUKSES 100%!');
-    console.log('📌 Akun Admin Login: nathanael@nutrimeal.id | Password: nathanael123');
+    console.log('\n🎉 PROSES SEEDING SELESAI SUKSES 100% (DATA BERSIH)!');
+    console.log('📌 Akun Admin: nathanael@nutrimeal.id | Password: nathanael123');
     process.exit(0);
   } catch (error) {
     console.error('❌ Terjadi kesalahan saat seeding:', error);

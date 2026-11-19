@@ -16,12 +16,21 @@ import {
   Smile,
 } from 'lucide-react';
 
+interface ServiceTicket {
+  id: string;
+  category: 'Ubah Alamat' | 'Jadwal Makan' | 'Pause Langganan' | 'Cek Kurir' | 'Konsultasi Alergi' | 'Invoice';
+  title: string;
+  details: string;
+  status: 'Diproses' | 'Terverifikasi' | 'Selesai';
+}
+
 interface ChatMessage {
   id: string;
   sender: 'admin' | 'customer';
   text: string;
   time: string;
   read: boolean;
+  ticket?: ServiceTicket;
 }
 
 interface Conversation {
@@ -39,41 +48,55 @@ interface Conversation {
 const initialConversations: Conversation[] = [
   {
     id: 'conv-1',
-    customerName: 'Rian Kusuma',
+    customerName: 'Andi Pratama',
     customerPhone: '+62 812-4491-0021',
     customerType: 'Personal',
-    lastMessage: 'Kak, apakah pesanan saya sudah dikirim?',
-    lastTime: '09:47',
-    unreadCount: 2,
+    lastMessage: 'Siap Kak Andi!, catatan zero-waste sudah kami tambahkan 🌱',
+    lastTime: '10:21',
+    unreadCount: 0,
     isOnline: true,
     messages: [
       {
         id: 'm1',
-        sender: 'customer',
-        text: 'Halo kak! Saya mau tanya pesanan saya nomor ORD-2025091.',
-        time: '09:40',
+        sender: 'admin',
+        text: 'Halo Andi! 👋 Selamat datang di layanan NutriCare! Saya Sarah dari tim Customer Care & Ahli Gizi NutriMeal. Ada kendala jadwal pengiriman katering, perubahan alamat, atau konsultasi menu diet yang bisa saya bantu hari ini?',
+        time: '10:15',
         read: true,
       },
       {
         id: 'm2',
-        sender: 'admin',
-        text: 'Halo Kak Rian! Pesanan Anda sedang dalam proses pengiriman ya, kurir Budi Santoso sudah dalam perjalanan.',
-        time: '09:42',
+        sender: 'customer',
+        text: 'Halo Kak Sarah, besok siang jam 11:30 katering saya mau dialihkan ke kantor di SCBD Lot 18 lantai 12 apa masih sempat diproses? Soalnya pagi ada rapat dadakan.',
+        time: '10:17',
         read: true,
       },
       {
         id: 'm3',
-        sender: 'customer',
-        text: 'Oh oke, kira-kira sampai jam berapa ya kak?',
-        time: '09:45',
+        sender: 'admin',
+        text: 'Tentu bisa Kak Andi! Perubahan alamat makan siang untuk besok kami terima maksimal pukul 19:00 WIB malam ini. Sudah kami catat dan update ke sistem kurir katering ya.',
+        time: '10:19',
         read: true,
+        ticket: {
+          id: 'TKT-8842',
+          category: 'Ubah Alamat',
+          title: 'Tiket Perubahan Alamat Pengiriman SCBD',
+          details: 'Gedung SCBD Lot 18, Lantai 12 (Rapat). Slot: 11:30 - 13:00 WIB',
+          status: 'Terverifikasi',
+        },
       },
       {
         id: 'm4',
         sender: 'customer',
-        text: 'Kak, apakah pesanan saya sudah dikirim?',
-        time: '09:47',
-        read: false,
+        text: 'Mantap, terima kasih banyak Kak Sarah! Kurirnya tolong ingatkan jangan pakai sendok plastik ya, di kantor sudah ada cutlery.',
+        time: '10:20',
+        read: true,
+      },
+      {
+        id: 'm5',
+        sender: 'admin',
+        text: 'Siap Kak Andi!, catatan zero-waste (tanpa alat makan plastik) sudah kami tambahkan ke slip pengiriman kurir. Selamat beristirahat dan menikmati menu NutriMeal besok! 🌱',
+        time: '10:21',
+        read: true,
       },
     ],
   },
@@ -211,12 +234,49 @@ const initialConversations: Conversation[] = [
   },
 ];
 
-const quickReplies = [
-  'Pesanan Anda sedang diproses 🍱',
-  'Kurir sedang dalam perjalanan ke lokasi Anda',
-  'Terima kasih atas kepercayaan Anda kepada NutriMeal!',
-  'Apakah ada catatan diet khusus yang perlu kami perhatikan?',
-  'Konfirmasi pesanan berhasil! Estimasi pengiriman sesuai jadwal.',
+const quickServiceChips = [
+  {
+    label: '📍 Ubah Alamat Pengiriman',
+    text: 'Tentu bisa! Perubahan alamat makan siang untuk besok kami terima maksimal pukul 19:00 WIB malam ini. Sudah kami catat dan update ke sistem kurir katering ya.',
+    ticketCategory: 'Ubah Alamat' as const,
+    ticketTitle: 'Tiket Perubahan Alamat Pengiriman',
+    ticketDetails: 'Alamat tujuan dialihkan sesuai permintaan pelanggan. Kurir telah diinfokan.',
+  },
+  {
+    label: '⚡ Ganti Jadwal Makan Siang',
+    text: 'Jadwal makan siang Anda berhasil dimajukan ke pukul 11:30 WIB. Tim dapur telah memprioritaskan pesanan Anda.',
+    ticketCategory: 'Jadwal Makan' as const,
+    ticketTitle: 'Tiket Perubahan Jadwal Makan Siang',
+    ticketDetails: 'Slot waktu diperbarui menjadi 11:30 - 12:30 WIB.',
+  },
+  {
+    label: '🛵 Cek Posisi Kurir Hari Ini',
+    text: 'Kurir Budi Santoso saat ini sedang dalam perjalanan menuju lokasi Anda. Estimasi tiba dalam 15-20 menit.',
+    ticketCategory: 'Cek Kurir' as const,
+    ticketTitle: 'Informasi Tracking Posisi Kurir',
+    ticketDetails: 'Kurir Budi Santoso (Motor 01) - Dalam pengantaran.',
+  },
+  {
+    label: '⏸ Pause Langganan Weekend',
+    text: 'Permintaan jeda (pause) langganan untuk akhir pekan telah aktif. Kuota makan Anda tidak berkurang dan otomatis diperpanjang ke minggu depan.',
+    ticketCategory: 'Pause Langganan' as const,
+    ticketTitle: 'Tiket Jeda (Pause) Langganan Katering',
+    ticketDetails: 'Langganan dijeda untuk Sabtu-Minggu. Kuota aman.',
+  },
+  {
+    label: '📋 Konsultasi Alergi Menu',
+    text: 'Catatan alergi Anda sudah kami verifikasi dengan Chef Ahli Gizi. Kami pastikan hidangan bebas dari alergen yang Anda sebutkan.',
+    ticketCategory: 'Konsultasi Alergi' as const,
+    ticketTitle: 'Konfirmasi Pantangan Alergi Medis Dapur',
+    ticketDetails: 'Bebas gluten / seafood sesuai instruksi profil pelanggan.',
+  },
+  {
+    label: '📄 Minta Invoice Langganan',
+    text: 'Invoice resmi pembayaran langganan katering telah kami buat dan link unduhannya telah tersedia.',
+    ticketCategory: 'Invoice' as const,
+    ticketTitle: 'Invoice Resmi Katering NutriMeal',
+    ticketDetails: 'Invoice PDF resmi telah diterbitkan.',
+  },
 ];
 
 export default function AdminChatPage() {
@@ -239,28 +299,43 @@ export default function AdminChatPage() {
     );
   };
 
-  const handleSend = () => {
-    if (!inputText.trim() || !selectedConvId) return;
+  const handleSend = (customText?: string, ticketData?: ServiceTicket) => {
+    const textToSend = customText ?? inputText.trim();
+    if (!textToSend || !selectedConvId) return;
+
     const newMessage: ChatMessage = {
       id: `m-${Date.now()}`,
       sender: 'admin',
-      text: inputText.trim(),
+      text: textToSend,
       time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
       read: true,
+      ticket: ticketData,
     };
+
     setConversations((prev) =>
       prev.map((c) =>
         c.id === selectedConvId
           ? {
               ...c,
               messages: [...c.messages, newMessage],
-              lastMessage: inputText.trim(),
+              lastMessage: textToSend,
               lastTime: newMessage.time,
             }
           : c
       )
     );
-    setInputText('');
+    if (!customText) setInputText('');
+  };
+
+  const handleSendServiceChip = (chip: typeof quickServiceChips[0]) => {
+    const ticket: ServiceTicket = {
+      id: `TKT-${Math.floor(1000 + Math.random() * 9000)}`,
+      category: chip.ticketCategory,
+      title: chip.ticketTitle,
+      details: chip.ticketDetails,
+      status: 'Terverifikasi',
+    };
+    handleSend(chip.text, ticket);
   };
 
   const filteredConvs = conversations.filter(
@@ -277,7 +352,7 @@ export default function AdminChatPage() {
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <MessageSquare className="w-6 h-6 text-emerald-800" />
-            <span>Chat & CS Pelanggan</span>
+            <span>Chat & CS Pelanggan (NutriCare)</span>
             {totalUnread > 0 && (
               <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-500 text-white">
                 {totalUnread} Baru
@@ -285,7 +360,7 @@ export default function AdminChatPage() {
             )}
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Tangani pertanyaan, konfirmasi pesanan, dan koordinasi pengiriman langsung dengan pelanggan.
+            Tangani tiket layanan mobile, perubahan alamat, jeda langganan, dan koordinasi pengiriman langsung dengan pelanggan.
           </p>
         </div>
       </div>
@@ -414,13 +489,30 @@ export default function AdminChatPage() {
                     </div>
                   )}
                   <div
-                    className={`max-w-[70%] px-4 py-2.5 rounded-2xl text-xs leading-relaxed ${
+                    className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-xs leading-relaxed ${
                       msg.sender === 'admin'
                         ? 'bg-emerald-800 text-white rounded-br-sm'
                         : 'bg-slate-100 text-slate-800 rounded-bl-sm'
                     }`}
                   >
                     <p>{msg.text}</p>
+
+                    {/* Service Ticket Card (Matching Flutter admin_chat_screen) */}
+                    {msg.ticket && (
+                      <div className="mt-2.5 p-3 rounded-xl bg-emerald-900/40 border border-emerald-500/40 text-emerald-100 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-extrabold text-[10px] tracking-wider uppercase text-emerald-300">
+                            TIKET LAYANAN #{msg.ticket.id}
+                          </span>
+                          <span className="px-2 py-0.2 rounded-full text-[9px] font-bold bg-emerald-500 text-white">
+                            {msg.ticket.status}
+                          </span>
+                        </div>
+                        <p className="font-bold text-white text-xs">{msg.ticket.title}</p>
+                        <p className="text-[11px] text-emerald-200">{msg.ticket.details}</p>
+                      </div>
+                    )}
+
                     <p
                       className={`text-[10px] mt-1 text-right flex items-center justify-end gap-1 ${
                         msg.sender === 'admin' ? 'text-emerald-200' : 'text-slate-400'
@@ -438,32 +530,37 @@ export default function AdminChatPage() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Replies */}
-            <div className="px-4 pb-2 flex items-center gap-2 overflow-x-auto">
-              {quickReplies.map((reply, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setInputText(reply)}
-                  className="shrink-0 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium hover:bg-emerald-50 hover:text-emerald-800 transition-colors border border-slate-200"
-                >
-                  {reply.length > 35 ? reply.slice(0, 35) + '...' : reply}
-                </button>
-              ))}
+            {/* Quick Service Action Chips (Matching Mobile App) */}
+            <div className="px-4 py-2 border-t border-slate-100 bg-slate-50/50">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                <span>Respon Cepat Tiket Layanan Mobile:</span>
+              </div>
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                {quickServiceChips.map((chip, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSendServiceChip(chip)}
+                    className="shrink-0 px-2.5 py-1 rounded-full bg-white text-slate-700 text-[11px] font-medium hover:bg-emerald-50 hover:text-emerald-800 transition-colors border border-slate-200 shadow-2xs"
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Input Area */}
-            <div className="px-4 pb-4">
+            <div className="px-4 py-3 border-t border-slate-100">
               <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
                 <input
                   type="text"
-                  placeholder="Ketik balasan katering..."
+                  placeholder="Ketik balasan CS NutriCare atau instruksi kurir..."
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
                   className="flex-1 bg-transparent text-xs text-slate-800 placeholder-slate-400 outline-none"
                 />
                 <button
-                  onClick={handleSend}
+                  onClick={() => handleSend()}
                   disabled={!inputText.trim()}
                   className="w-8 h-8 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white flex items-center justify-center disabled:opacity-40 transition-colors"
                 >
