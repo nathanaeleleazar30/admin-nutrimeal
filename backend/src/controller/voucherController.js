@@ -14,6 +14,26 @@ const voucherController = {
     }
   },
 
+  // GET /api/vouchers/code/:code
+  async getByCode(req, res, next) {
+    try {
+      const { code } = req.params;
+      const voucher = await voucherModel.getByCode(code);
+      if (!voucher || !voucher.is_active) {
+        return res.status(404).json({
+          success: false,
+          message: `Kode voucher ${code.toUpperCase()} tidak valid atau sudah tidak aktif.`,
+        });
+      }
+      res.status(200).json({
+        success: true,
+        data: voucher,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // GET /api/vouchers/:id
   async getById(req, res, next) {
     try {

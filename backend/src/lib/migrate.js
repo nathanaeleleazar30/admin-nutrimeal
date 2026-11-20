@@ -42,7 +42,11 @@ async function runMigrations() {
         continue;
       }
 
-      const sql = await fs.readFile(path.join(migrationsDirectory, file), 'utf8');
+      let sql = await fs.readFile(path.join(migrationsDirectory, file), 'utf8');
+      if (sql.charCodeAt(0) === 0xFEFF) {
+        sql = sql.slice(1);
+      }
+      sql = sql.replace(/^\uFEFF/, '').trim();
       await connection.query(sql);
       await connection.execute('INSERT INTO schema_migrations (name) VALUES (?)', [file]);
       console.log(`✅ Applied: ${file}`);

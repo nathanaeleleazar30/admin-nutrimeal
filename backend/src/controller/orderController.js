@@ -1,4 +1,4 @@
-﻿const orderModel = require('../model/orderModel');
+const orderModel = require('../model/orderModel');
 
 const orderController = {
   // GET /api/orders
@@ -47,6 +47,21 @@ const orderController = {
       }
 
       const newOrder = await orderModel.create(req.body);
+
+      // Otomatis buat notifikasi in-app untuk customer jika customer_id disertakan
+      if (req.body.customer_id) {
+        try {
+          const notificationModel = require('../model/notificationModel');
+          await notificationModel.create({
+            customer_id: req.body.customer_id,
+            title: `Pesanan ${newOrder.id} Diterima! 🎉`,
+            body: `Pesanan ${newOrder.package_name || 'katering sehat'} sebesar Rp ${Number(newOrder.total_price).toLocaleString('id-ID')} telah masuk ke dapur NutriMeal.`,
+            type: 'order',
+            route: '/notifikasi',
+          });
+        } catch (_) {}
+      }
+
       res.status(201).json({
         success: true,
         message: 'Pesanan berhasil dibuat',

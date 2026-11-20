@@ -3,6 +3,7 @@ const router = express.Router();
 const voucherController = require('../controller/voucherController');
 
 router.get('/', voucherController.getAll);
+router.get('/code/:code', voucherController.getByCode);
 router.get('/:id', voucherController.getById);
 router.post('/', voucherController.create);
 router.put('/:id', voucherController.update);
