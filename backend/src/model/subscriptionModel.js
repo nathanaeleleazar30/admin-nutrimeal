@@ -1,7 +1,12 @@
 const pool = require('../lib/db');
 
 const subscriptionModel = {
-  async getAll() {
+  async getAll(customerId) {
+    if (customerId) {
+      const sql = 'SELECT * FROM subscriptions WHERE customer_id = ? OR customer_name = ? ORDER BY created_at DESC';
+      const [rows] = await pool.query(sql, [customerId, customerId]);
+      return rows;
+    }
     const sql = 'SELECT * FROM subscriptions ORDER BY created_at DESC';
     const [rows] = await pool.query(sql);
     return rows;
@@ -44,13 +49,30 @@ const subscriptionModel = {
     return this.getById(id);
   },
 
-  async updateStatus(id, status, pauseReason) {
-    const sql = `
-      UPDATE subscriptions 
-      SET status = ?, pause_reason = ? 
-      WHERE id = ?
-    `;
-    await pool.query(sql, [status, pauseReason || null, id]);
+  async updateStatus(id, status, pauseReason, autoRenew) {
+    let sql = 'UPDATE subscriptions SET ';
+    const params = [];
+    const updates = [];
+
+    if (status) {
+      updates.push('status = ?');
+      params.push(status);
+    }
+    if (pauseReason !== undefined) {
+      updates.push('pause_reason = ?');
+      params.push(pauseReason || null);
+    }
+    if (autoRenew !== undefined) {
+      updates.push('auto_renew = ?');
+      params.push(autoRenew ? 1 : 0);
+    }
+
+    if (updates.length === 0) return this.getById(id);
+
+    sql += updates.join(', ') + ' WHERE id = ?';
+    params.push(id);
+
+    await pool.query(sql, params);
     return this.getById(id);
   },
 

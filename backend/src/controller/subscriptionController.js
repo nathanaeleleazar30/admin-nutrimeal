@@ -4,7 +4,8 @@ const subscriptionController = {
   // GET /api/subscriptions
   async getAll(req, res, next) {
     try {
-      const subs = await subscriptionModel.getAll();
+      const customerId = req.query.customer_id || req.query.customerId || req.query.customer_name;
+      const subs = await subscriptionModel.getAll(customerId);
       res.status(200).json({
         success: true,
         data: subs,
@@ -60,15 +61,15 @@ const subscriptionController = {
   async updateStatus(req, res, next) {
     try {
       const { id } = req.params;
-      const { status, pause_reason } = req.body;
-      if (!status) {
+      const { status, pause_reason, auto_renew } = req.body;
+      if (!status && auto_renew === undefined) {
         return res.status(400).json({
           success: false,
-          message: 'Status langganan (Aktif/Dijeda/Selesai) wajib diisi',
+          message: 'Status atau auto_renew wajib disertakan',
         });
       }
 
-      const updated = await subscriptionModel.updateStatus(id, status, pause_reason);
+      const updated = await subscriptionModel.updateStatus(id, status, pause_reason, auto_renew);
       if (!updated) {
         return res.status(404).json({
           success: false,
@@ -77,7 +78,7 @@ const subscriptionController = {
       }
       res.status(200).json({
         success: true,
-        message: `Status langganan berhasil diperbarui menjadi ${status}`,
+        message: 'Status langganan berhasil diperbarui',
         data: updated,
       });
     } catch (error) {

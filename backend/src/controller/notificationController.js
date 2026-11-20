@@ -1,11 +1,11 @@
-﻿const notificationModel = require('../model/notificationModel');
+const notificationModel = require('../model/notificationModel');
 const notificationService = require('../lib/notificationService');
 
 const notificationController = {
   // GET /api/notifications?customerId=...
   async getByCustomer(req, res, next) {
     try {
-      const customerId = req.query.customerId || req.query.userId;
+      const customerId = req.query.customerId || req.query.userId || req.query.customer_id;
       if (!customerId) {
         return res.status(400).json({
           success: false,
@@ -31,7 +31,7 @@ const notificationController = {
   async markAsRead(req, res, next) {
     try {
       const { id } = req.params;
-      const { customerId } = req.body;
+      const customerId = req.body.customerId || req.body.customer_id;
       const success = await notificationModel.markAsRead(id, customerId);
 
       if (!success) {
@@ -53,7 +53,7 @@ const notificationController = {
   // PATCH /api/notifications/read-all
   async markAllAsRead(req, res, next) {
     try {
-      const { customerId } = req.body;
+      const customerId = req.body.customerId || req.body.customer_id;
       if (!customerId) {
         return res.status(400).json({
           success: false,
