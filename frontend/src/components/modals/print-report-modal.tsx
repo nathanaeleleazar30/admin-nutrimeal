@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { X, Printer, Leaf } from 'lucide-react';
 
 interface PrintReportModalProps {
@@ -39,8 +40,14 @@ export function PrintReportModal({ isOpen, onClose }: PrintReportModalProps) {
           {/* Header & Logo */}
           <div className="flex items-center justify-between border-b-2 border-slate-800 pb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center text-white">
-                <Leaf className="w-6 h-6" />
+              <div className="w-12 h-12 rounded-xl overflow-hidden border border-slate-200 shadow-xs shrink-0 flex items-center justify-center bg-white">
+                <Image
+                  src="/logo.png"
+                  alt="NutriMeal Logo"
+                  width={48}
+                  height={48}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div>
                 <h1 className="text-lg font-black tracking-tight text-slate-900">

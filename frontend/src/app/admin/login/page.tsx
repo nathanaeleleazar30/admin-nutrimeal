@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Script from 'next/script';
 import { Leaf, Lock, Mail, ArrowRight, CheckCircle2, AlertCircle, User, Phone } from 'lucide-react';
 
@@ -194,8 +195,15 @@ export default function AdminLoginPage() {
       <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
         {/* Header */}
         <div className="p-8 pb-5 text-center border-b border-slate-100 bg-linear-to-b from-emerald-50/50 to-white">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-700 flex items-center justify-center text-white mx-auto shadow-md shadow-emerald-700/20 mb-3">
-            <Leaf className="w-7 h-7 fill-white" />
+          <div className="w-16 h-16 rounded-2xl overflow-hidden border border-slate-200/80 shadow-md shadow-emerald-700/10 mx-auto mb-3 bg-white flex items-center justify-center">
+            <Image
+              src="/logo.png"
+              alt="NutriMeal Admin Logo"
+              width={64}
+              height={64}
+              className="w-full h-full object-cover"
+              priority
+            />
           </div>
           <h1 className="text-xl font-black text-slate-900 tracking-tight">
             NutriMeal UMKM Admin

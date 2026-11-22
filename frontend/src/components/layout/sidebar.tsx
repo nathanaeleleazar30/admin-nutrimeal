@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -93,9 +94,16 @@ export function Sidebar() {
   return (
     <aside className="w-64 bg-white border-r border-slate-200/80 flex flex-col shrink-0 min-h-screen select-none">
       {/* Brand Header */}
-      <div className="p-5 flex items-center gap-3 border-b border-slate-100">
-        <div className="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
-          <Leaf className="w-5 h-5 fill-white" />
+      <div className="p-4 flex items-center gap-3 border-b border-slate-100">
+        <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-100 shadow-sm shrink-0 bg-white flex items-center justify-center">
+          <Image
+            src="/logo.png"
+            alt="NutriMeal Admin Logo"
+            width={40}
+            height={40}
+            className="w-full h-full object-cover"
+            priority
+          />
         </div>
         <div>
           <div className="flex items-center gap-1">

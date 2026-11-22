@@ -17,6 +17,10 @@ export interface MealItem {
   imageUrl: string;
   description: string;
   tags: string[];
+  spicyLevel?: 'Tidak Pedas' | 'Sedang' | 'Pedas';
+  isVegetarian?: boolean;
+  eventTags?: string[];
+  stockQuantity?: number;
   schedule: string;
   deliveryTime: string;
   nutrition: NutritionInfo;
@@ -510,9 +514,9 @@ class NutriMealDatabase {
     return this.orders.find((o) => o.id === id);
   }
 
-  public createOrder(data: Omit<CateringOrder, 'id' | 'createdAt'>) {
+  public createOrder(data: Omit<CateringOrder, 'id' | 'createdAt'> & { id?: string }) {
     const newOrder: CateringOrder = {
-      id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: data.id || `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
       createdAt: new Date().toISOString(),
       ...data,
     };
@@ -590,6 +594,10 @@ class NutriMealDatabase {
   // Vouchers
   public getVouchers() {
     return [...this.vouchers];
+  }
+
+  public getVoucherById(id: string) {
+    return this.vouchers.find((v) => v.id === id);
   }
 
   public createVoucher(data: Omit<VoucherPromo, 'id' | 'usedCount'>) {
