@@ -16,6 +16,11 @@ export const metadata: Metadata = {
   title: 'NutriMeal UMKM - Dashboard Operasional Katering',
   description:
     'Sistem Manajemen Katering Sehat & Operasional Terpadu UMKM NutriMeal (Pesanan, Menu, Nilai Gizi, Pelanggan, dan Laporan)',
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({
