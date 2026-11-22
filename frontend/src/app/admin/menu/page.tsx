@@ -41,6 +41,11 @@ export default function AdminMenuPage() {
   const [formFat, setFormFat] = useState('12g');
   const [formCarbs, setFormCarbs] = useState('45g');
   const [formImageUrl, setFormImageUrl] = useState('');
+  // AI Planner Attributes
+  const [formSpicyLevel, setFormSpicyLevel] = useState<'Tidak Pedas' | 'Sedang' | 'Pedas'>('Tidak Pedas');
+  const [formIsVegetarian, setFormIsVegetarian] = useState(false);
+  const [formEventTags, setFormEventTags] = useState('Rapat Kantor, Syukuran, Harian');
+  const [formStockQuantity, setFormStockQuantity] = useState(100);
 
   // Upload states
   const [imageSourceMode, setImageSourceMode] = useState<'upload' | 'url'>('upload');
@@ -126,6 +131,10 @@ export default function AdminMenuPage() {
     setImagePreview('');
     setImageFile(null);
     setImageSourceMode('upload');
+    setFormSpicyLevel('Tidak Pedas');
+    setFormIsVegetarian(false);
+    setFormEventTags('Rapat Kantor, Syukuran, Harian');
+    setFormStockQuantity(100);
     setIsModalOpen(true);
   };
 
@@ -148,6 +157,23 @@ export default function AdminMenuPage() {
     setImagePreview(currentImg);
     setImageFile(null);
     setImageSourceMode(currentImg.startsWith('http') ? 'url' : 'upload');
+    setFormSpicyLevel(meal.spicyLevel || (meal as any).spicy_level || 'Tidak Pedas');
+    setFormIsVegetarian(
+      meal.isVegetarian !== undefined
+        ? meal.isVegetarian
+        : (meal as any).is_vegetarian === 1 || (meal as any).is_vegetarian === true
+    );
+    const rawEventTags = meal.eventTags || (meal as any).event_tags;
+    setFormEventTags(
+      Array.isArray(rawEventTags)
+        ? rawEventTags.join(', ')
+        : (rawEventTags || 'Rapat Kantor, Syukuran, Harian')
+    );
+    setFormStockQuantity(
+      meal.stockQuantity !== undefined
+        ? meal.stockQuantity
+        : ((meal as any).stock_quantity !== undefined ? (meal as any).stock_quantity : 100)
+    );
     setIsModalOpen(true);
   };
 
@@ -175,6 +201,14 @@ export default function AdminMenuPage() {
       schedule: formSchedule,
       imageUrl: finalImageUrl,
       image_url: finalImageUrl,
+      spicy_level: formSpicyLevel,
+      spicyLevel: formSpicyLevel,
+      is_vegetarian: formIsVegetarian ? 1 : 0,
+      isVegetarian: formIsVegetarian,
+      event_tags: formEventTags,
+      eventTags: formEventTags.split(',').map((t) => t.trim()).filter((t) => t.length > 0),
+      stock_quantity: formStockQuantity,
+      stockQuantity: formStockQuantity,
       nutrition: {
         calories: formCalories,
         protein: formProtein,
@@ -397,6 +431,27 @@ export default function AdminMenuPage() {
                           {meal.deliveryTime}
                         </span>
                       )}
+                    </div>
+
+                    {/* AI Planner Info Badges */}
+                    <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[10px]">
+                      <span className={`px-2 py-0.5 rounded font-semibold ${
+                        (meal.spicyLevel || (meal as any).spicy_level) === 'Pedas'
+                          ? 'bg-red-50 text-red-700 border border-red-200'
+                          : (meal.spicyLevel || (meal as any).spicy_level) === 'Sedang'
+                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                          : 'bg-slate-100 text-slate-700'
+                      }`}>
+                        🌶️ {meal.spicyLevel || (meal as any).spicy_level || 'Tidak Pedas'}
+                      </span>
+                      {(meal.isVegetarian || (meal as any).is_vegetarian) && (
+                        <span className="px-2 py-0.5 rounded font-semibold bg-green-50 text-green-700 border border-green-200">
+                          🌱 Vegetarian
+                        </span>
+                      )}
+                      <span className="px-2 py-0.5 rounded font-medium bg-slate-50 text-slate-600 border border-slate-100">
+                        📦 Stok: {(meal.stockQuantity !== undefined ? meal.stockQuantity : (meal as any).stock_quantity) ?? 100} porsi
+                      </span>
                     </div>
 
                     {/* Nutrition Badges */}
@@ -662,6 +717,66 @@ export default function AdminMenuPage() {
                     )}
                   </div>
                 )}
+              </div>
+
+              {/* AI Planner Attributes Section */}
+              <div className="p-3 bg-emerald-50/50 rounded-lg border border-emerald-200">
+                <p className="font-bold text-emerald-900 text-xs mb-2 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600 inline-block animate-pulse"></span>
+                  Parameter NutriMeal AI Planner
+                </p>
+                
+                <div className="grid grid-cols-2 gap-3 mb-2.5">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-700 block mb-1">Level Kepedasan</label>
+                    <select
+                      value={formSpicyLevel}
+                      onChange={(e) => setFormSpicyLevel(e.target.value as any)}
+                      className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white font-medium"
+                    >
+                      <option value="Tidak Pedas">Tidak Pedas</option>
+                      <option value="Sedang">Sedang</option>
+                      <option value="Pedas">Pedas</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-700 block mb-1">Stok Porsi Acara</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={formStockQuantity}
+                      onChange={(e) => setFormStockQuantity(Number(e.target.value))}
+                      placeholder="Contoh: 100"
+                      className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-2.5">
+                  <label className="text-[11px] font-semibold text-slate-700 block mb-1">Tag Acara / Event (Pisahkan dengan koma)</label>
+                  <input
+                    type="text"
+                    value={formEventTags}
+                    onChange={(e) => setFormEventTags(e.target.value)}
+                    placeholder="Contoh: Rapat Kantor, Syukuran, Ulang Tahun, Harian"
+                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-0.5">Digunakan AI Planner untuk mencocokkan menu dengan tema acara customer</p>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="is_vegetarian"
+                    checked={formIsVegetarian}
+                    onChange={(e) => setFormIsVegetarian(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                  />
+                  <label htmlFor="is_vegetarian" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                    Menu Ramah Vegetarian / Vegan 🌱
+                  </label>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

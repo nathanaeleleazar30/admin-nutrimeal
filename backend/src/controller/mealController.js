@@ -4,8 +4,8 @@ const mealController = {
   // GET /api/meals
   async getAll(req, res, next) {
     try {
-      const { category, search } = req.query;
-      const meals = await mealModel.getAll({ category, search });
+      const { category, search, event, spicy_level, is_vegetarian, min_stock } = req.query;
+      const meals = await mealModel.getAll({ category, search, event, spicy_level, is_vegetarian, min_stock });
       res.status(200).json({
         success: true,
         data: meals,

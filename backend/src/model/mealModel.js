@@ -2,7 +2,7 @@ const pool = require('../lib/db');
 
 // Model adalah SATU-SATUNYA tempat query SQL ke database dengan placeholder '?'
 const mealModel = {
-  async getAll({ category, search } = {}) {
+  async getAll({ category, search, event, spicy_level, is_vegetarian, min_stock } = {}) {
     let sql = 'SELECT * FROM meals WHERE 1=1';
     const params = [];
 
@@ -11,10 +11,30 @@ const mealModel = {
       params.push(category);
     }
 
+    if (spicy_level && spicy_level !== 'Semua') {
+      sql += ' AND spicy_level = ?';
+      params.push(spicy_level);
+    }
+
+    if (is_vegetarian !== undefined && is_vegetarian !== null && is_vegetarian !== '') {
+      sql += ' AND is_vegetarian = ?';
+      params.push(Number(is_vegetarian) ? 1 : 0);
+    }
+
+    if (min_stock) {
+      sql += ' AND stock_quantity >= ?';
+      params.push(Number(min_stock));
+    }
+
+    if (event) {
+      sql += ' AND event_tags LIKE ?';
+      params.push(`%${event}%`);
+    }
+
     if (search) {
-      sql += ' AND (name LIKE ? OR description LIKE ? OR tags LIKE ?)';
+      sql += ' AND (name LIKE ? OR description LIKE ? OR tags LIKE ? OR event_tags LIKE ?)';
       const queryPattern = `%${search}%`;
-      params.push(queryPattern, queryPattern, queryPattern);
+      params.push(queryPattern, queryPattern, queryPattern, queryPattern);
     }
 
     sql += ' ORDER BY created_at DESC';
@@ -31,8 +51,8 @@ const mealModel = {
   async create(data) {
     const id = data.id || `item-${Date.now()}`;
     const sql = `
-      INSERT INTO meals (id, name, category, calories, price, discount_percent, image_url, description, tags, schedule, delivery_time, protein, fat, carbs, is_available)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO meals (id, name, category, calories, price, discount_percent, image_url, description, tags, spicy_level, is_vegetarian, event_tags, schedule, delivery_time, protein, fat, carbs, is_available, stock_quantity)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const params = [
       id,
@@ -44,6 +64,13 @@ const mealModel = {
       data.image_url || data.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop',
       data.description || 'Menu katering sehat bergizi',
       Array.isArray(data.tags) ? data.tags.join(', ') : (data.tags || ''),
+      data.spicy_level || data.spicyLevel || 'Tidak Pedas',
+      data.is_vegetarian !== undefined
+        ? (data.is_vegetarian ? 1 : 0)
+        : (data.isVegetarian !== undefined ? (data.isVegetarian ? 1 : 0) : 0),
+      Array.isArray(data.event_tags || data.eventTags)
+        ? (data.event_tags || data.eventTags).join(', ')
+        : (data.event_tags || data.eventTags || 'Rapat Kantor, Syukuran, Harian'),
       data.schedule || 'Setiap Hari',
       data.delivery_time || data.deliveryTime || '12:00 - 13:00 WIB',
       data.protein || data.nutrition?.protein || '30g',
@@ -52,6 +79,7 @@ const mealModel = {
       data.is_available !== undefined
         ? (data.is_available ? 1 : 0)
         : (data.isAvailable !== undefined ? (data.isAvailable ? 1 : 0) : 1),
+      Number(data.stock_quantity !== undefined ? data.stock_quantity : (data.stockQuantity !== undefined ? data.stockQuantity : 100)),
     ];
 
     await pool.query(sql, params);
@@ -64,7 +92,7 @@ const mealModel = {
 
     const sql = `
       UPDATE meals 
-      SET name = ?, category = ?, calories = ?, price = ?, discount_percent = ?, image_url = ?, description = ?, tags = ?, schedule = ?, delivery_time = ?, protein = ?, fat = ?, carbs = ?, is_available = ?
+      SET name = ?, category = ?, calories = ?, price = ?, discount_percent = ?, image_url = ?, description = ?, tags = ?, spicy_level = ?, is_vegetarian = ?, event_tags = ?, schedule = ?, delivery_time = ?, protein = ?, fat = ?, carbs = ?, is_available = ?, stock_quantity = ?
       WHERE id = ?
     `;
 
@@ -76,6 +104,10 @@ const mealModel = {
     const rawCarbs = data.carbs !== undefined ? data.carbs : data.nutrition?.carbs;
     const rawAvailable = data.is_available !== undefined ? data.is_available : data.isAvailable;
     const rawTags = data.tags !== undefined ? (Array.isArray(data.tags) ? data.tags.join(', ') : data.tags) : existing.tags;
+    const rawSpicy = data.spicy_level !== undefined ? data.spicy_level : (data.spicyLevel !== undefined ? data.spicyLevel : existing.spicy_level);
+    const rawVeg = data.is_vegetarian !== undefined ? (data.is_vegetarian ? 1 : 0) : (data.isVegetarian !== undefined ? (data.isVegetarian ? 1 : 0) : existing.is_vegetarian);
+    const rawEventTags = data.event_tags !== undefined ? (Array.isArray(data.event_tags) ? data.event_tags.join(', ') : data.event_tags) : (data.eventTags !== undefined ? (Array.isArray(data.eventTags) ? data.eventTags.join(', ') : data.eventTags) : existing.event_tags);
+    const rawStock = data.stock_quantity !== undefined ? Number(data.stock_quantity) : (data.stockQuantity !== undefined ? Number(data.stockQuantity) : existing.stock_quantity);
 
     const params = [
       data.name !== undefined ? data.name : existing.name,
@@ -86,12 +118,16 @@ const mealModel = {
       rawImage !== undefined ? rawImage : existing.image_url,
       data.description !== undefined ? data.description : existing.description,
       rawTags !== undefined ? rawTags : existing.tags,
+      rawSpicy !== undefined ? rawSpicy : 'Tidak Pedas',
+      rawVeg !== undefined ? rawVeg : 0,
+      rawEventTags !== undefined ? rawEventTags : 'Rapat Kantor, Syukuran, Harian',
       data.schedule !== undefined ? data.schedule : existing.schedule,
       rawDelivery !== undefined ? rawDelivery : existing.delivery_time,
       rawProtein !== undefined ? rawProtein : existing.protein,
       rawFat !== undefined ? rawFat : existing.fat,
       rawCarbs !== undefined ? rawCarbs : existing.carbs,
       rawAvailable !== undefined ? (rawAvailable ? 1 : 0) : existing.is_available,
+      rawStock !== undefined ? rawStock : 100,
       id,
     ];
 
