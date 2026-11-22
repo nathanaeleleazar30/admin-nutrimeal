@@ -1,9 +1,14 @@
 const pool = require('../lib/db');
 
 const orderModel = {
-  async getAll({ status, batch, day, search }) {
+  async getAll({ status, batch, day, search, customer_id } = {}) {
     let sql = 'SELECT * FROM orders WHERE 1=1';
     const params = [];
+
+    if (customer_id) {
+      sql += ' AND customer_id = ?';
+      params.push(customer_id);
+    }
 
     if (status && status !== 'Semua') {
       sql += ' AND status = ?';
@@ -39,16 +44,18 @@ const orderModel = {
 
   async create(data) {
     const id = data.id || `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
+    const customer_id = data.customer_id || data.customerId || null;
     const sql = `
       INSERT INTO orders (
-        id, customer_name, customer_phone, customer_address, address_detail, customer_type,
+        id, customer_id, customer_name, customer_phone, customer_address, address_detail, customer_type,
         package_name, package_detail, menu_name, menu_detail, portions_count,
         delivery_schedule, delivery_batch, day, status, total_price,
         payment_method, payment_status, courier_name, courier_notes, kitchen_notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const params = [
       id,
+      customer_id,
       data.customer_name,
       data.customer_phone,
       data.customer_address,

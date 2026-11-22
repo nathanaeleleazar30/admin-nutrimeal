@@ -52,6 +52,7 @@ export type CustomerType = 'Personal' | 'Korporat / Kantor' | 'Keluarga';
 
 export interface CateringOrder {
   id: string;
+  customer_id?: string;
   customer_name: string;
   customer_phone: string;
   customer_address: string;
