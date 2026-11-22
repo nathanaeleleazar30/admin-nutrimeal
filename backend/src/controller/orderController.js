@@ -4,8 +4,15 @@ const orderController = {
   // GET /api/orders
   async getAll(req, res, next) {
     try {
-      const { status, batch, day, search } = req.query;
-      const orders = await orderModel.getAll({ status, batch, day, search });
+      const { status, batch, day, search, customer_id, customerId } = req.query;
+      const finalCustomerId = customer_id || customerId;
+      const orders = await orderModel.getAll({
+        status,
+        batch,
+        day,
+        search,
+        customer_id: finalCustomerId,
+      });
       res.status(200).json({
         success: true,
         data: orders,
