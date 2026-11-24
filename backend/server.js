@@ -19,6 +19,7 @@ const authRoutes = require('./src/routes/authRoutes');
 const uploadRoutes = require('./src/routes/uploadRoutes');
 const notificationRoutes = require('./src/routes/notificationRoutes');
 const aiPlannerRoutes = require('./src/routes/aiPlannerRoutes');
+const chatRoutes = require('./src/routes/chatRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -85,6 +86,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/ai-planner', aiPlannerRoutes);
+app.use('/api/chat', chatRoutes);
 
 // ==========================================
 // 4. Handler 404 (Membalas JSON)
