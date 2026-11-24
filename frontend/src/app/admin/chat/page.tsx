@@ -35,6 +35,7 @@ interface ChatMessage {
 
 interface Conversation {
   id: string;
+  customerId?: string;
   customerName: string;
   customerPhone: string;
   customerType: 'Personal' | 'Korporat / Kantor' | 'Keluarga';
@@ -279,6 +280,10 @@ const quickServiceChips = [
   },
 ];
 
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000')
+  .replace(/\/api\/?$/, '')
+  .replace(/\/$/, '');
+
 export default function AdminChatPage() {
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
   const [selectedConvId, setSelectedConvId] = useState<string | null>('conv-1');
@@ -288,30 +293,67 @@ export default function AdminChatPage() {
 
   const selectedConv = conversations.find((c) => c.id === selectedConvId) || null;
 
+  // Sinkronisasi realtime data percakapan dari Express backend
+  const fetchConversations = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/chat/conversations`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setConversations(json.data);
+          setSelectedConvId((prev) => {
+            if (!prev) return json.data[0].id;
+            const exists = json.data.some((c: Conversation) => c.id === prev);
+            return exists ? prev : json.data[0].id;
+          });
+        }
+      }
+    } catch {
+      // Jika server Express offline sementara, biarkan initialConversations
+    }
+  };
+
+  useEffect(() => {
+    fetchConversations();
+    const interval = setInterval(fetchConversations, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [selectedConv?.messages]);
 
-  const handleSelectConv = (convId: string) => {
+  const handleSelectConv = async (convId: string) => {
     setSelectedConvId(convId);
     setConversations((prev) =>
       prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0, messages: c.messages.map((m) => ({ ...m, read: true })) } : c))
     );
+    try {
+      await fetch(`${API_BASE}/api/chat/conversations/${convId}/read`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ readerType: 'admin' }),
+      });
+    } catch (_) {}
   };
 
-  const handleSend = (customText?: string, ticketData?: ServiceTicket) => {
+  const handleSend = async (customText?: string, ticketData?: ServiceTicket) => {
     const textToSend = customText ?? inputText.trim();
     if (!textToSend || !selectedConvId) return;
+
+    const now = new Date();
+    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
     const newMessage: ChatMessage = {
       id: `m-${Date.now()}`,
       sender: 'admin',
       text: textToSend,
-      time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      time: timeStr,
       read: true,
       ticket: ticketData,
     };
 
+    // Update optimistik di UI
     setConversations((prev) =>
       prev.map((c) =>
         c.id === selectedConvId
@@ -319,12 +361,33 @@ export default function AdminChatPage() {
               ...c,
               messages: [...c.messages, newMessage],
               lastMessage: textToSend,
-              lastTime: newMessage.time,
+              lastTime: timeStr,
             }
           : c
       )
     );
     if (!customText) setInputText('');
+
+    // Kirim ke backend Express
+    try {
+      await fetch(`${API_BASE}/api/chat/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversationId: selectedConvId,
+          customerId: selectedConv?.customerId || 'cst-1',
+          sender: 'admin',
+          text: textToSend,
+          time: timeStr,
+          ticket: ticketData,
+          customerName: selectedConv?.customerName,
+          customerPhone: selectedConv?.customerPhone,
+        }),
+      });
+      fetchConversations();
+    } catch (err) {
+      console.warn('Gagal sinkronisasi pesan ke server:', err);
+    }
   };
 
   const handleSendServiceChip = (chip: typeof quickServiceChips[0]) => {
