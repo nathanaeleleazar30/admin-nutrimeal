@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CateringOrder } from '@/types';
+import { CateringOrder, OrderStatus } from '@/types';
 import { SuratJalanModal } from '@/components/modals/surat-jalan-modal';
 import {
   ArrowLeft,
@@ -30,6 +30,9 @@ export function OrderDetailView({ initialOrder }: OrderDetailViewProps) {
   const [copied, setCopied] = useState(false);
   const [isSuratJalanOpen, setIsSuratJalanOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const isPaidOrCod =
+    order.payment_status === 'Lunas' || order.payment_status === 'COD';
 
   const handleCopyAddress = () => {
     const fullText = `${order.customer_name} - ${order.customer_phone}\n${order.customer_address}${
@@ -53,19 +56,24 @@ export function OrderDetailView({ initialOrder }: OrderDetailViewProps) {
     window.open(`https://wa.me/${phoneWithCountry}?text=${msg}`, '_blank');
   };
 
-  const handleStatusChange = async (newStatus: 'Diterima' | 'Diproses' | 'Dikirim' | 'Selesai') => {
+  const handleStatusChange = async (newStatus: OrderStatus) => {
     setUpdatingStatus(true);
+    setStatusError(null);
     try {
       const res = await fetch(`/api/orders/${order.id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       });
+      const json = await res.json().catch(() => null);
       if (res.ok) {
         setOrder((prev) => ({ ...prev, status: newStatus }));
+      } else {
+        setStatusError(json?.message || 'Status pesanan tidak dapat diubah.');
       }
     } catch (e) {
       console.error('Failed to update status', e);
+      setStatusError('Gagal menghubungi server.');
     } finally {
       setUpdatingStatus(false);
     }
@@ -110,9 +118,17 @@ export function OrderDetailView({ initialOrder }: OrderDetailViewProps) {
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
               {order.day || 'Senin'} • {order.delivery_batch}
             </span>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-200 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3 text-green-600" />
-              <span>{order.payment_status || 'Lunas'}</span>
+            <span
+              className={`px-2.5 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1 ${
+                order.payment_status === 'Lunas' || order.payment_status === 'COD'
+                  ? 'bg-green-50 text-green-700 border-green-200'
+                  : order.payment_status === 'Dibatalkan' || order.payment_status === 'Kedaluwarsa'
+                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                  : 'bg-amber-50 text-amber-700 border-amber-200'
+              }`}
+            >
+              <CheckCircle2 className="w-3 h-3" />
+              <span>{order.payment_status || 'Menunggu Pembayaran'}</span>
             </span>
           </div>
 
@@ -282,21 +298,36 @@ export function OrderDetailView({ initialOrder }: OrderDetailViewProps) {
                 <label className="text-[11px] font-bold text-slate-400 block mb-1">
                   Ubah Status Pesanan:
                 </label>
+                {!isPaidOrCod && (
+                  <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mb-2 font-medium">
+                    Status masak/pengantaran terkunci sampai pembayaran berstatus Lunas atau COD.
+                  </p>
+                )}
+                {statusError && (
+                  <p className="text-[11px] text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-2.5 py-1.5 mb-2 font-medium">
+                    {statusError}
+                  </p>
+                )}
                 <div className="grid grid-cols-2 gap-2">
-                  {(['Diterima', 'Diproses', 'Dikirim', 'Selesai'] as const).map((st) => (
-                    <button
-                      key={st}
-                      disabled={updatingStatus}
-                      onClick={() => handleStatusChange(st)}
-                      className={`py-2 text-xs font-bold rounded-lg border transition-all ${
-                        order.status === st
-                          ? 'bg-emerald-800 text-white border-emerald-800 shadow-xs'
-                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                      }`}
-                    >
-                      {st}
-                    </button>
-                  ))}
+                  {(['Diterima', 'Diproses', 'Dikirim', 'Selesai', 'Dibatalkan'] as OrderStatus[]).map((st) => {
+                    const locked = st !== 'Dibatalkan' && !isPaidOrCod;
+                    return (
+                      <button
+                        key={st}
+                        disabled={updatingStatus || locked}
+                        onClick={() => handleStatusChange(st)}
+                        className={`py-2 text-xs font-bold rounded-lg border transition-all ${
+                          locked
+                            ? 'bg-slate-50 text-slate-300 border-slate-200 cursor-not-allowed'
+                            : order.status === st
+                            ? 'bg-emerald-800 text-white border-emerald-800 shadow-xs'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        {st}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -307,7 +338,17 @@ export function OrderDetailView({ initialOrder }: OrderDetailViewProps) {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Status Pembayaran:</span>
-                  <span className="font-bold text-emerald-700">{order.payment_status}</span>
+                  <span
+                    className={`font-bold ${
+                      isPaidOrCod
+                        ? 'text-emerald-700'
+                        : order.payment_status === 'Dibatalkan' || order.payment_status === 'Kedaluwarsa'
+                        ? 'text-rose-700'
+                        : 'text-amber-700'
+                    }`}
+                  >
+                    {order.payment_status}
+                  </span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-slate-100 text-sm">
                   <span className="font-bold text-slate-800">Total Harga:</span>
