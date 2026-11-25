@@ -57,19 +57,22 @@ export function DashboardView() {
 
   const handleStatusChange = async (orderId: string, status: OrderStatus) => {
     try {
-      await fetch(`/api/orders/${orderId}`, {
+      const res = await fetch(`/api/orders/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        alert(json?.message || 'Status pesanan tidak dapat diubah.');
+        return;
+      }
       if (selectedOrder && selectedOrder.id === orderId) {
         setSelectedOrder({ ...selectedOrder, status });
       }
       fetchDashboardData();
     } catch {
-      if (selectedOrder && selectedOrder.id === orderId) {
-        setSelectedOrder({ ...selectedOrder, status });
-      }
+      alert('Gagal menghubungi server untuk mengubah status pesanan.');
     }
   };
 
@@ -100,7 +103,7 @@ export function DashboardView() {
             totalPortions={analyticsData?.packageDonut?.totalSoldPortions}
             categories={analyticsData?.packageDonut?.categories}
           />
-          <DeliveryBatches />
+          <DeliveryBatches batches={analyticsData?.deliveryBatches} />
         </div>
       </div>
 
@@ -126,6 +129,7 @@ export function DashboardView() {
       <PrintReportModal
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
+        analytics={analyticsData}
       />
     </>
   );

@@ -16,16 +16,16 @@ export function WeeklySalesChart({ data }: { data?: WeeklySalesItem[] }) {
   const [hoveredDay, setHoveredDay] = useState<WeeklySalesItem | null>(null);
 
   const chartData: WeeklySalesItem[] = data || [
-    { day: 'Sen (18 Okt)', diet: 45, kantor: 35, family: 20, event: 10, total: 110 },
-    { day: 'Sel (19 Okt)', diet: 55, kantor: 40, family: 25, event: 15, total: 135 },
-    { day: 'Rab (20 Okt)', diet: 50, kantor: 42, family: 22, event: 12, total: 126 },
-    { day: 'Kam (21 Okt - Hari ini)', diet: 65, kantor: 50, family: 30, event: 18, total: 163 },
-    { day: 'Jum (22 Okt)', diet: 60, kantor: 48, family: 28, event: 14, total: 150 },
-    { day: 'Sab (23 Okt)', diet: 40, kantor: 25, family: 35, event: 22, total: 122 },
-    { day: 'Min (24 Okt)', diet: 35, kantor: 15, family: 40, event: 30, total: 120 },
+    { day: 'Sen', diet: 0, kantor: 0, family: 0, event: 0, total: 0 },
+    { day: 'Sel', diet: 0, kantor: 0, family: 0, event: 0, total: 0 },
+    { day: 'Rab', diet: 0, kantor: 0, family: 0, event: 0, total: 0 },
+    { day: 'Kam', diet: 0, kantor: 0, family: 0, event: 0, total: 0 },
+    { day: 'Jum', diet: 0, kantor: 0, family: 0, event: 0, total: 0 },
+    { day: 'Sab', diet: 0, kantor: 0, family: 0, event: 0, total: 0 },
+    { day: 'Min', diet: 0, kantor: 0, family: 0, event: 0, total: 0 },
   ];
 
-  const maxTotal = Math.max(...chartData.map((d) => d.total));
+  const maxTotal = Math.max(1, ...chartData.map((d) => d.total));
 
   return (
     <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs flex flex-col justify-between h-full">
@@ -104,12 +104,12 @@ export function WeeklySalesChart({ data }: { data?: WeeklySalesItem[] }) {
         <div className="flex items-end justify-between gap-2 h-52 relative z-0 px-2">
           {chartData.map((item, idx) => {
             const isToday = item.day.includes('Hari ini');
-            const totalHeightPercent = (item.total / maxTotal) * 100;
+            const totalHeightPercent = item.total > 0 ? (item.total / maxTotal) * 100 : 0;
 
-            const dietPercent = (item.diet / item.total) * 100;
-            const kantorPercent = (item.kantor / item.total) * 100;
-            const familyPercent = (item.family / item.total) * 100;
-            const eventPercent = (item.event / item.total) * 100;
+            const dietPercent = item.total > 0 ? (item.diet / item.total) * 100 : 0;
+            const kantorPercent = item.total > 0 ? (item.kantor / item.total) * 100 : 0;
+            const familyPercent = item.total > 0 ? (item.family / item.total) * 100 : 0;
+            const eventPercent = item.total > 0 ? (item.event / item.total) * 100 : 0;
 
             return (
               <div

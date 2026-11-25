@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AdminLayout } from '@/components/layout/admin-layout';
+import { CateringOrder } from '@/lib/data-store';
 import {
   Calendar,
   Sun,
@@ -15,7 +16,6 @@ import {
   CheckCircle,
   Circle,
   Flame,
-  User,
 } from 'lucide-react';
 
 const DAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -31,171 +31,25 @@ interface DeliverySlot {
   batch: 'Pagi/Siang' | 'Sore/Malam';
   time: string;
   portions: number;
-  calories: number;
   courier: string;
   status: 'Antri' | 'Dimasak' | 'Siap Kirim' | 'Dikirim' | 'Terkirim';
+  paymentStatus: string;
 }
 
-const weeklySchedule: Record<string, DeliverySlot[]> = {
-  Senin: [
-    {
-      id: 's-1',
-      customerName: 'Rian Kusuma',
-      customerPhone: '+62 812-4491-0021',
-      address: 'Sudirman Tower Lt. 12, Unit 1205',
-      addressDetail: 'Jakarta Selatan • Titip Resepsionis',
-      menuName: 'Grilled Chicken + Salad Brokoli',
-      menuDetail: 'Nasi Merah Organik • Less Oil',
-      batch: 'Pagi/Siang',
-      time: '11:30 - 13:00 WIB',
-      portions: 1,
-      calories: 450,
-      courier: 'Budi Santoso - Motor 01',
-      status: 'Terkirim',
-    },
-    {
-      id: 's-2',
-      customerName: 'Amanda Wijaya',
-      customerPhone: '+62 821-9980-1123',
-      address: 'SCBD Suites Tower 2, Unit 08A',
-      addressDetail: 'Jakarta Pusat • Diantar ke Lobby',
-      menuName: 'Grilled Chicken + Salad Brokoli',
-      menuDetail: 'Nasi Merah Organik • Less Oil',
-      batch: 'Pagi/Siang',
-      time: '11:30 - 13:00 WIB',
-      portions: 2,
-      calories: 450,
-      courier: 'Budi Santoso - Motor 01',
-      status: 'Terkirim',
-    },
-    {
-      id: 's-3',
-      customerName: 'Anita Wijaya',
-      customerPhone: '+62 811-2300-881',
-      address: 'Perumahan Kemang Pratama 3 Blok F No. 12',
-      addressDetail: 'Bekasi Selatan • Diterima ART',
-      menuName: 'Dada Ayam Panggang Wortel Serut',
-      menuDetail: 'Kukus Labu Siam & Jagung',
-      batch: 'Sore/Malam',
-      time: '17:00 - 18:30 WIB',
-      portions: 1,
-      calories: 380,
-      courier: 'Ahmad Fauzi - Motor 02',
-      status: 'Dikirim',
-    },
-    {
-      id: 's-4',
-      customerName: 'dr. Hendra Salim',
-      customerPhone: '+62 856-1109-3321',
-      address: 'Pondok Indah Golf Apartment Tower 1 Unit 15C',
-      addressDetail: 'Jakarta Selatan • Khusus Medical Diet',
-      menuName: 'Dada Ayam Panggang Wortel Serut',
-      menuDetail: 'Kukus Labu Siam & Jagung - Low Sodium',
-      batch: 'Sore/Malam',
-      time: '17:00 - 18:30 WIB',
-      portions: 2,
-      calories: 350,
-      courier: 'Ahmad Fauzi - Motor 02',
-      status: 'Dikirim',
-    },
-  ],
-  Selasa: [
-    {
-      id: 's-5',
-      customerName: 'Jessica Natalie',
-      customerPhone: '+62 818-0922-3114',
-      address: 'Apartemen Cosmo Park Thamrin City Lt. 10',
-      addressDetail: 'Jakarta Pusat • Titip Security Lobby',
-      menuName: 'Pepes Tongkol Bumbu Kuning',
-      menuDetail: 'Nasi Merah Organik + Sayur Asem Bening',
-      batch: 'Pagi/Siang',
-      time: '11:30 - 13:00 WIB',
-      portions: 1,
-      calories: 380,
-      courier: 'Budi Santoso - Motor 01',
-      status: 'Siap Kirim',
-    },
-    {
-      id: 's-6',
-      customerName: 'Dimas Wicaksono',
-      customerPhone: '+62 812-7788-9900',
-      address: 'Wisma Nusantara Lt. 18, Jl. MH Thamrin',
-      addressDetail: 'Jakarta Pusat • Security Pintu Selatan',
-      menuName: 'Beef Teriyaki Rendah Lemak + Brokoli',
-      menuDetail: 'Nasi Shirataki & Tumis Jagung Manis',
-      batch: 'Pagi/Siang',
-      time: '11:30 - 13:00 WIB',
-      portions: 5,
-      calories: 520,
-      courier: 'Budi Santoso - Motor 01',
-      status: 'Dimasak',
-    },
-  ],
-  Rabu: [
-    {
-      id: 's-7',
-      customerName: 'Dimas Pratama',
-      customerPhone: '0812-8890-1122',
-      address: 'Jl. Soekarno Hatta No. 45, Lowokwaru, Malang',
-      menuName: 'Chicken Salad Wijen Sangrai',
-      menuDetail: 'Romaine Lettuce • Olive Oil Dressing',
-      batch: 'Pagi/Siang',
-      time: '11:30 - 13:00 WIB',
-      portions: 1,
-      calories: 320,
-      courier: 'Budi Santoso - Motor 01',
-      status: 'Antri',
-    },
-  ],
-  Kamis: [
-    {
-      id: 's-8',
-      customerName: 'Kevin Tan',
-      customerPhone: '0877-6411-2233',
-      address: 'Apartemen Begawan Lt. 12 No. 04, Malang',
-      menuName: 'Beef Teriyaki Rendah Lemak + Brokoli',
-      menuDetail: 'Nasi Merah • Brokoli Kukus',
-      batch: 'Pagi/Siang',
-      time: '11:30 - 13:00 WIB',
-      portions: 1,
-      calories: 520,
-      courier: 'Ahmad Fauzi - Motor 02',
-      status: 'Antri',
-    },
-  ],
-  Jumat: [
-    {
-      id: 's-9',
-      customerName: 'Amanda Putri (PT Digita)',
-      customerPhone: '0858-7702-9901',
-      address: 'Gedung Graha Pena Lt. 4, Jl. Ahmad Yani, Malang',
-      menuName: 'Ayam Bowl',
-      menuDetail: 'Suwir Ayam • Jagung Manis • Edamame',
-      batch: 'Pagi/Siang',
-      time: '11:30 - 13:00 WIB',
-      portions: 10,
-      calories: 520,
-      courier: 'Budi Santoso - Motor 01',
-      status: 'Antri',
-    },
-  ],
-  Sabtu: [
-    {
-      id: 's-10',
-      customerName: 'Citra Kirana (PT Maju)',
-      customerPhone: '0821-6577-8898',
-      address: 'Kawasan Industri Arjosari Malang',
-      menuName: 'Chicken Wrap Bayam',
-      menuDetail: 'Tortilla Bayam • Ayam Panggang • Saus Yoghurt',
-      batch: 'Pagi/Siang',
-      time: '11:30 - 13:00 WIB',
-      portions: 25,
-      calories: 350,
-      courier: 'Budi Santoso - Motor 01',
-      status: 'Antri',
-    },
-  ],
-};
+function mapOrderStatusToSlotStatus(
+  status: string
+): 'Antri' | 'Dimasak' | 'Siap Kirim' | 'Dikirim' | 'Terkirim' {
+  switch (status) {
+    case 'Diproses':
+      return 'Dimasak';
+    case 'Dikirim':
+      return 'Dikirim';
+    case 'Selesai':
+      return 'Terkirim';
+    default:
+      return 'Antri';
+  }
+}
 
 const statusColors: Record<string, string> = {
   Antri: 'bg-slate-100 text-slate-600',
@@ -216,15 +70,67 @@ const statusIcon: Record<string, React.ReactNode> = {
 export default function AdminSchedulePage() {
   const [selectedDay, setSelectedDay] = useState('Senin');
   const [batchFilter, setBatchFilter] = useState<'Semua' | 'Pagi/Siang' | 'Sore/Malam'>('Semua');
+  const [orders, setOrders] = useState<CateringOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadPaidOrders() {
+      try {
+        const res = await fetch('/api/orders', { cache: 'no-store' });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data)) {
+            setOrders(json.data);
+          }
+        }
+      } catch (err) {
+        console.warn('Gagal memuat jadwal pengiriman dari backend:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadPaidOrders();
+  }, []);
+
+  // Kecualikan pesanan yang belum dibayar / dibatalkan / kedaluwarsa agar tidak masuk jadwal dapur
+  const eligibleOrders = orders.filter(
+    (o) =>
+      o.status !== 'Menunggu Pembayaran' &&
+      o.status !== 'Dibatalkan' &&
+      (o.paymentStatus === 'Lunas' || o.paymentStatus === 'COD')
+  );
+
+  const slotsByDay: Record<string, DeliverySlot[]> = {};
+  for (const d of DAYS) {
+    slotsByDay[d] = [];
+  }
+  for (const o of eligibleOrders) {
+    const targetDay = DAYS.includes(o.day || '') ? (o.day as string) : 'Senin';
+    slotsByDay[targetDay].push({
+      id: o.id,
+      customerName: o.customerName,
+      customerPhone: o.customerPhone,
+      address: o.customerAddress,
+      addressDetail: o.addressDetail,
+      menuName: o.menuName || o.packageName,
+      menuDetail: o.menuDetail || o.packageDetail,
+      batch: o.deliveryBatch === 'Sore/Malam' ? 'Sore/Malam' : 'Pagi/Siang',
+      time: o.deliverySchedule || '11:30 - 13:00 WIB',
+      portions: o.portionsCount || 1,
+      courier: o.courierName || 'Kurir NutriMeal',
+      status: mapOrderStatusToSlotStatus(o.status),
+      paymentStatus: o.paymentStatus || 'Lunas',
+    });
+  }
 
   const dayIndex = DAYS.indexOf(selectedDay);
-  const slots = (weeklySchedule[selectedDay] || []).filter(
+  const daySlots = slotsByDay[selectedDay] || [];
+  const slots = daySlots.filter(
     (s) => batchFilter === 'Semua' || s.batch === batchFilter
   );
 
-  const siangSlots = (weeklySchedule[selectedDay] || []).filter((s) => s.batch === 'Pagi/Siang');
-  const soreSlots = (weeklySchedule[selectedDay] || []).filter((s) => s.batch === 'Sore/Malam');
-  const totalPortions = slots.reduce((acc, s) => acc + s.portions, 0);
+  const siangSlots = daySlots.filter((s) => s.batch === 'Pagi/Siang');
+  const soreSlots = daySlots.filter((s) => s.batch === 'Sore/Malam');
 
   const prevDay = () => setSelectedDay(DAYS[Math.max(0, dayIndex - 1)]);
   const nextDay = () => setSelectedDay(DAYS[Math.min(DAYS.length - 1, dayIndex + 1)]);
@@ -239,7 +145,7 @@ export default function AdminSchedulePage() {
             <span>Jadwal Pengiriman Harian</span>
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Pantau slot pengiriman per hari, status masak dapur, dan tracking kurir per batch.
+            Menampilkan pesanan terverifikasi (Lunas / COD) per hari, batch pengiriman, dan status dapur.
           </p>
         </div>
       </div>
@@ -259,7 +165,7 @@ export default function AdminSchedulePage() {
           {/* Day Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto flex-1 justify-center">
             {DAYS.map((day) => {
-              const count = (weeklySchedule[day] || []).length;
+              const count = (slotsByDay[day] || []).length;
               return (
                 <button
                   key={day}
@@ -298,11 +204,9 @@ export default function AdminSchedulePage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4">
           <p className="text-[11px] text-slate-500 font-semibold">Total Pengiriman</p>
-          <p className="text-2xl font-black text-slate-900 mt-1">
-            {(weeklySchedule[selectedDay] || []).length}
-          </p>
+          <p className="text-2xl font-black text-slate-900 mt-1">{daySlots.length}</p>
           <p className="text-[11px] text-emerald-700 font-medium mt-0.5">
-            {selectedDay} • Semua Batch
+            {selectedDay} • Terkonfirmasi Lunas/COD
           </p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4">
@@ -318,7 +222,7 @@ export default function AdminSchedulePage() {
         <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4">
           <p className="text-[11px] text-slate-500 font-semibold">Total Porsi</p>
           <p className="text-2xl font-black text-slate-900 mt-1">
-            {(weeklySchedule[selectedDay] || []).reduce((acc, s) => acc + s.portions, 0)}
+            {daySlots.reduce((acc, s) => acc + s.portions, 0)}
           </p>
           <p className="text-[11px] text-slate-500 font-medium mt-0.5">Box akan disiapkan</p>
         </div>
@@ -345,14 +249,20 @@ export default function AdminSchedulePage() {
       </div>
 
       {/* Delivery Slots */}
-      {slots.length === 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-xl border border-slate-200/80 p-12 text-center text-xs text-slate-400">
+          Memuat antrean jadwal pengiriman...
+        </div>
+      ) : slots.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200/80 p-12 text-center">
           <Calendar className="w-10 h-10 text-slate-300 mx-auto mb-3" />
           <p className="text-sm font-semibold text-slate-500">
-            Tidak ada pengiriman hari {selectedDay}
+            Tidak ada pengiriman terkonfirmasi hari {selectedDay}
           </p>
           <p className="text-xs text-slate-400 mt-1">
-            {batchFilter !== 'Semua' && `untuk batch ${batchFilter}`}
+            {batchFilter !== 'Semua'
+              ? `untuk batch ${batchFilter}`
+              : 'Pesanan yang belum dibayar atau dibatalkan tidak dimasukkan ke jadwal.'}
           </p>
         </div>
       ) : (
@@ -385,6 +295,9 @@ export default function AdminSchedulePage() {
                     {statusIcon[slot.status]}
                     {slot.status}
                   </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {slot.paymentStatus}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1 text-[11px] text-slate-500">
                   <Clock className="w-3 h-3" />
@@ -399,11 +312,12 @@ export default function AdminSchedulePage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-slate-900">{slot.customerName}</p>
-                  <p className="text-[11px] text-slate-400">{slot.customerPhone}</p>
+                  <p className="text-[11px] text-slate-400">
+                    #{slot.id} • {slot.customerPhone}
+                  </p>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-xs font-bold text-emerald-800">{slot.portions}x Porsi</p>
-                  <p className="text-[10px] text-slate-400">{slot.calories} kkal/porsi</p>
                 </div>
               </div>
 
