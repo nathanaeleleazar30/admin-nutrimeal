@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AdminLayout } from '@/components/layout/admin-layout';
 import {
   HelpCircle,
@@ -113,7 +113,10 @@ const categoryColors: Record<string, string> = {
 };
 
 export default function AdminFaqPage() {
-  const [faqs, setFaqs] = useState<FaqItem[]>(initialFaqs);
+  const [faqs, setFaqs] = useState<FaqItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<FaqCategory>('Semua');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -122,6 +125,30 @@ export default function AdminFaqPage() {
   const [formQ, setFormQ] = useState('');
   const [formA, setFormA] = useState('');
   const [formCat, setFormCat] = useState<Exclude<FaqCategory, 'Semua'>>('Langganan');
+
+  const loadFaqs = async () => {
+    setIsLoading(true);
+    setApiError(null);
+    try {
+      const res = await fetch('/api/faqs', { cache: 'no-store' });
+      const json = await res.json();
+      if (res.ok && json.success && Array.isArray(json.data)) {
+        setFaqs(json.data);
+      } else {
+        setFaqs(initialFaqs);
+        setApiError(json.message || 'Gagal memuat FAQ dari backend; menampilkan data cadangan.');
+      }
+    } catch {
+      setFaqs(initialFaqs);
+      setApiError('Tidak dapat terhubung ke backend; menampilkan data cadangan.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadFaqs();
+  }, []);
 
   const filtered = faqs.filter((faq) => {
     const matchCat = categoryFilter === 'Semua' || faq.category === categoryFilter;
@@ -148,38 +175,95 @@ export default function AdminFaqPage() {
     setIsModalOpen(true);
   };
 
-  const handleSave = () => {
-    if (!formQ.trim() || !formA.trim()) return;
-    if (editingFaq) {
-      setFaqs((prev) =>
-        prev.map((f) =>
-          f.id === editingFaq.id ? { ...f, question: formQ, answer: formA, category: formCat } : f
-        )
-      );
-    } else {
-      const newFaq: FaqItem = {
-        id: `faq-${Date.now()}`,
-        question: formQ,
-        answer: formA,
-        category: formCat,
-        isActive: true,
-        viewCount: 0,
-      };
-      setFaqs((prev) => [newFaq, ...prev]);
+  const handleSave = async () => {
+    if (!formQ.trim() || !formA.trim() || isSaving) return;
+    setIsSaving(true);
+    try {
+      if (editingFaq) {
+        const res = await fetch(`/api/faqs/${encodeURIComponent(editingFaq.id)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question: formQ.trim(),
+            answer: formA.trim(),
+            category: formCat,
+            isActive: editingFaq.isActive,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success || !json.data) {
+          alert(json.message || 'Gagal menyimpan perubahan FAQ ke server.');
+          return;
+        }
+        setFaqs((prev) =>
+          prev.map((f) => (f.id === editingFaq.id ? json.data : f))
+        );
+      } else {
+        const res = await fetch('/api/faqs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question: formQ.trim(),
+            answer: formA.trim(),
+            category: formCat,
+            isActive: true,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success || !json.data) {
+          alert(json.message || 'Gagal menambahkan FAQ baru ke server.');
+          return;
+        }
+        setFaqs((prev) => [...prev, json.data]);
+      }
+      setIsModalOpen(false);
+    } catch {
+      alert('Terjadi kesalahan jaringan saat menyimpan FAQ.');
+    } finally {
+      setIsSaving(false);
     }
-    setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Yakin ingin menghapus FAQ ini dari aplikasi pelanggan?')) {
+  const handleDelete = async (id: string) => {
+    if (!confirm('Yakin ingin menghapus FAQ ini dari aplikasi pelanggan?')) return;
+    try {
+      const res = await fetch(`/api/faqs/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
+        alert(json.message || 'Gagal menghapus FAQ di server.');
+        return;
+      }
       setFaqs((prev) => prev.filter((f) => f.id !== id));
+    } catch {
+      alert('Terjadi kesalahan jaringan saat menghapus FAQ.');
     }
   };
 
-  const toggleActive = (id: string) => {
-    setFaqs((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, isActive: !f.isActive } : f))
-    );
+  const toggleActive = async (id: string) => {
+    const target = faqs.find((f) => f.id === id);
+    if (!target) return;
+    try {
+      const res = await fetch(`/api/faqs/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: target.category,
+          question: target.question,
+          answer: target.answer,
+          isActive: !target.isActive,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success || !json.data) {
+        alert(json.message || 'Gagal mengubah status aktif FAQ.');
+        return;
+      }
+      setFaqs((prev) => prev.map((f) => (f.id === id ? json.data : f)));
+    } catch {
+      alert('Terjadi kesalahan jaringan saat memperbarui status FAQ.');
+    }
   };
 
   return (
@@ -258,8 +342,18 @@ export default function AdminFaqPage() {
       </div>
 
       {/* FAQ List */}
-      <div className="space-y-2.5">
-        {filtered.map((faq) => (
+      {apiError && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium px-4 py-2.5 rounded-xl">
+          {apiError}
+        </div>
+      )}
+      {isLoading ? (
+        <div className="bg-white rounded-xl border border-slate-200/80 p-8 text-center text-xs text-slate-500">
+          Memuat daftar FAQ dari server...
+        </div>
+      ) : (
+        <div className="space-y-2.5">
+          {filtered.map((faq) => (
           <div
             key={faq.id}
             className={`bg-white rounded-xl border shadow-xs overflow-hidden transition-all ${
@@ -273,7 +367,9 @@ export default function AdminFaqPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${categoryColors[faq.category]}`}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                      categoryColors[faq.category] || 'bg-slate-100 text-slate-700 border-slate-200'
+                    }`}
                   >
                     {faq.category}
                   </span>
@@ -344,7 +440,8 @@ export default function AdminFaqPage() {
             <p className="text-xs text-slate-400 mt-1">Coba ubah filter atau kata kunci pencarian</p>
           </div>
         )}
-      </div>
+        </div>
+      )}
 
       {/* CS Contact Card */}
       <div className="bg-emerald-900 text-white rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
