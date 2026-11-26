@@ -29,19 +29,19 @@ interface StatCardsProps {
 
 export function StatCards({ stats }: StatCardsProps) {
   const data = stats || {
-    totalOrdersToday: 142,
-    totalOrdersChange: '+16.2%',
-    readyToShip: 96,
-    inProcess: 46,
-    monthlyRevenueDisplay: 'Rp 18.5jt',
-    monthlyRevenueChange: '+14.5%',
-    dailyRevenueAverage: 'Rp 720rb',
-    activeCustomers: 320,
-    newCustomersThisMonth: 28,
-    personalCustomers: 215,
-    corporateCustomers: 105,
-    activeMenus: 24,
-    availablePackages: 5,
+    totalOrdersToday: 0,
+    totalOrdersChange: '0%',
+    readyToShip: 0,
+    inProcess: 0,
+    monthlyRevenueDisplay: 'Rp 0',
+    monthlyRevenueChange: '0%',
+    dailyRevenueAverage: 'Rp 0',
+    activeCustomers: 0,
+    newCustomersThisMonth: 0,
+    personalCustomers: 0,
+    corporateCustomers: 0,
+    activeMenus: 0,
+    availablePackages: 0,
   };
 
   return (

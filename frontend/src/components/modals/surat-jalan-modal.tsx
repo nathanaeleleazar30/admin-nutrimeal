@@ -38,8 +38,12 @@ export function SuratJalanModal({
 
   if (!isOpen) return null;
 
-  // Filter orders for the manifest
+  // Filter orders for the manifest (kecualikan pesanan yang belum dibayar / dibatalkan)
   const manifestOrders = orders.filter((o) => {
+    const isPaidOrCod =
+      o.status !== 'Menunggu Pembayaran' &&
+      o.status !== 'Dibatalkan' &&
+      (o.paymentStatus === 'Lunas' || o.paymentStatus === 'COD');
     const matchesDay = filterDay === 'Semua' ? true : (o.day || 'Senin') === filterDay;
     const matchesBatch =
       filterBatch === 'Semua'
@@ -52,7 +56,7 @@ export function SuratJalanModal({
         ? true
         : o.courierName?.includes(selectedCourier);
 
-    return matchesDay && matchesBatch && matchesCourier;
+    return isPaidOrCod && matchesDay && matchesBatch && matchesCourier;
   });
 
   const totalBoxes = manifestOrders.reduce(

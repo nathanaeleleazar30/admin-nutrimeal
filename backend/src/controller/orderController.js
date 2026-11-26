@@ -53,10 +53,42 @@ const orderController = {
         });
       }
 
-      const newOrder = await orderModel.create(req.body);
+      const { verifyJwt } = require('../lib/jwt');
+      const { extractBearerToken, ADMIN_ROLES } = require('../middleware/authMiddleware');
+      const token = extractBearerToken(req);
+      let authPayload = null;
+      if (token) {
+        try {
+          authPayload = verifyJwt(token);
+        } catch (_err) {
+          authPayload = null;
+        }
+      }
+      const isAdmin = Boolean(authPayload && ADMIN_ROLES.has(authPayload.role));
+      const requestedPaymentStatus = req.body.payment_status;
 
-      // Otomatis buat notifikasi in-app untuk customer jika customer_id disertakan
-      if (req.body.customer_id) {
+      if (requestedPaymentStatus === 'Lunas' && !isAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: 'Status Lunas hanya dapat ditetapkan melalui pembayaran QRIS terverifikasi atau oleh admin',
+        });
+      }
+
+      const safeBody = { ...req.body };
+      if (!isAdmin) {
+        safeBody.payment_status = requestedPaymentStatus === 'COD' ? 'COD' : 'Menunggu Pembayaran';
+        safeBody.status = safeBody.payment_status === 'COD' ? 'Diterima' : 'Menunggu Pembayaran';
+      } else {
+        safeBody.payment_status = requestedPaymentStatus || 'Menunggu Pembayaran';
+        safeBody.status =
+          req.body.status ||
+          (['Lunas', 'COD'].includes(safeBody.payment_status) ? 'Diterima' : 'Menunggu Pembayaran');
+      }
+
+      const newOrder = await orderModel.create(safeBody);
+
+      // Otomatis buat notifikasi in-app hanya untuk pesanan yang sudah dibayar (Lunas/COD)
+      if (req.body.customer_id && ['Lunas', 'COD'].includes(newOrder.payment_status)) {
         try {
           const notificationModel = require('../model/notificationModel');
           await notificationModel.create({
@@ -112,6 +144,25 @@ const orderController = {
   async update(req, res, next) {
     try {
       const { id } = req.params;
+      if (req.body.payment_status === 'Lunas') {
+        const { verifyJwt } = require('../lib/jwt');
+        const { extractBearerToken, ADMIN_ROLES } = require('../middleware/authMiddleware');
+        const token = extractBearerToken(req);
+        let authPayload = null;
+        if (token) {
+          try {
+            authPayload = verifyJwt(token);
+          } catch (_err) {
+            authPayload = null;
+          }
+        }
+        if (!authPayload || !ADMIN_ROLES.has(authPayload.role)) {
+          return res.status(403).json({
+            success: false,
+            message: 'Status Lunas hanya dapat ditetapkan melalui pembayaran QRIS terverifikasi atau oleh admin',
+          });
+        }
+      }
       const updated = await orderModel.update(id, req.body);
       if (!updated) {
         return res.status(404).json({

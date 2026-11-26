@@ -43,7 +43,9 @@ const orderModel = {
   },
 
   async create(data) {
-    const id = data.id || `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
+    const id =
+      data.id ||
+      `ORD-${require('node:crypto').randomBytes(4).toString('hex').toUpperCase()}`;
     const customer_id = data.customer_id || data.customerId || null;
     const sql = `
       INSERT INTO orders (
@@ -69,10 +71,10 @@ const orderModel = {
       data.delivery_schedule || '11:30 - 13:00 WIB',
       data.delivery_batch || 'Pagi/Siang',
       data.day || 'Senin',
-      data.status || 'Diterima',
+      data.status || 'Menunggu Pembayaran',
       Number(data.total_price),
       data.payment_method || 'QRIS',
-      data.payment_status || 'Lunas',
+      data.payment_status || 'Menunggu Pembayaran',
       data.courier_name || null,
       data.courier_notes || null,
       data.kitchen_notes || null,
@@ -83,6 +85,19 @@ const orderModel = {
   },
 
   async updateStatus(id, status) {
+    const existing = await this.getById(id);
+    if (!existing) return null;
+    if (
+      ['Diterima', 'Diproses', 'Dikirim', 'Selesai'].includes(status) &&
+      !['Lunas', 'COD'].includes(existing.payment_status)
+    ) {
+      const err = new Error(
+        'Pesanan belum dibayar (Lunas/COD), status tidak dapat diproses atau dikirim'
+      );
+      err.status = 409;
+      err.statusCode = 409;
+      throw err;
+    }
     const sql = 'UPDATE orders SET status = ? WHERE id = ?';
     await pool.query(sql, [status, id]);
     return this.getById(id);
@@ -91,6 +106,19 @@ const orderModel = {
   async update(id, data) {
     const existing = await this.getById(id);
     if (!existing) return null;
+    const effectivePaymentStatus = data.payment_status || existing.payment_status;
+    if (
+      data.status &&
+      ['Diterima', 'Diproses', 'Dikirim', 'Selesai'].includes(data.status) &&
+      !['Lunas', 'COD'].includes(effectivePaymentStatus)
+    ) {
+      const err = new Error(
+        'Pesanan belum dibayar (Lunas/COD), status tidak dapat diproses atau dikirim'
+      );
+      err.status = 409;
+      err.statusCode = 409;
+      throw err;
+    }
 
     const sql = `
       UPDATE orders
