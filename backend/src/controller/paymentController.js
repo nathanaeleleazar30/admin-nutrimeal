@@ -110,6 +110,29 @@ const paymentController = {
     }
   },
 
+  // POST /api/payments/:id/simulate-pay (Sandbox Only)
+  async simulatePay(req, res, next) {
+    try {
+      if (String(process.env.MIDTRANS_IS_PRODUCTION).toLowerCase() === 'true') {
+        return res.status(403).json({
+          success: false,
+          message: 'Simulasi pembayaran hanya tersedia pada mode Sandbox.',
+        });
+      }
+      const data = await paymentModel.simulatePaymentPaid({
+        paymentId: req.params.id,
+        customerId: req.customerId,
+      });
+      return res.status(200).json({
+        success: true,
+        message: 'Pembayaran berhasil disimulasikan sebagai Lunas (Settlement).',
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // POST /api/payments/notification (Midtrans Webhook)
   async webhook(req, res, next) {
     try {

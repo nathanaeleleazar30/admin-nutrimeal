@@ -1458,6 +1458,30 @@ function createPaymentModel({
     return formatPaymentResponse(synced);
   }
 
+  async function simulatePaymentPaid({ paymentId, customerId }) {
+    const [rows] = await pool.query('SELECT * FROM payments WHERE id = ? LIMIT 1', [paymentId]);
+    const payment = rows && rows[0];
+    if (!payment) {
+      throw createHttpError(404, 'Data pembayaran tidak ditemukan.');
+    }
+    if (customerId && payment.customer_id !== customerId) {
+      throw createHttpError(403, 'Anda tidak memiliki akses ke pembayaran ini.');
+    }
+
+    const synced = await syncPaymentStatus({
+      paymentId: payment.id,
+      midtransData: {
+        transaction_status: 'settlement',
+        payment_type: 'qris',
+        status_code: '200',
+        gross_amount: String(payment.gross_amount),
+        transaction_time: new Date().toISOString(),
+      },
+    });
+
+    return formatPaymentResponse(synced);
+  }
+
   return {
     calculateQuote,
     computeSubscriptionSchedule,
@@ -1467,6 +1491,7 @@ function createPaymentModel({
     getActivePayment,
     cancelPayment,
     handleWebhookNotification,
+    simulatePaymentPaid,
   };
 }
 
