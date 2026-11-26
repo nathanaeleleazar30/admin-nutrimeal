@@ -7,14 +7,14 @@ const BACKEND_BASE = (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 
   .replace(/\/$/, '');
 const BACKEND_FAQS_URL = `${BACKEND_BASE}/api/faqs`;
 
-export function mapBackendFaqToFrontend(row: any) {
+function mapBackendFaqToFrontend(row: Record<string, unknown>) {
   return {
     id: String(row.id),
     category: row.category,
     question: row.question,
     answer: row.answer,
     isActive: row.is_active === 1 || row.is_active === true,
-    viewCount: Number(row.view_count || 120),
+    viewCount: Number(row.view_count || 0),
   };
 }
 
@@ -28,23 +28,17 @@ export async function GET() {
         return NextResponse.json({ success: true, data: mapped });
       }
     }
+    return NextResponse.json(
+      { success: false, data: [], message: 'Gagal mengambil data FAQ dari backend' },
+      { status: 502 }
+    );
   } catch (error) {
     console.warn('⚠️ Gagal terhubung ke Express Backend untuk GET /api/faqs:', error);
+    return NextResponse.json(
+      { success: false, data: [], message: 'Backend Express tidak terjangkau' },
+      { status: 502 }
+    );
   }
-
-  return NextResponse.json({
-    success: true,
-    data: [
-      {
-        id: 'faq-1',
-        category: 'Pengiriman',
-        question: 'Bagaimana cara mengubah alamat pengiriman langganan harian?',
-        answer: 'Pelanggan dapat mengubah alamat pengiriman melalui tab Jadwal atau halaman Langganan Saya di aplikasi.',
-        isActive: true,
-        viewCount: 248,
-      },
-    ],
-  });
 }
 
 export async function POST(req: Request) {
@@ -63,10 +57,17 @@ export async function POST(req: Request) {
 
     if (res.ok) {
       const json = await res.json();
-      return NextResponse.json({ success: true, data: json.data }, { status: 201 });
+      return NextResponse.json(
+        { success: true, data: json.data ? mapBackendFaqToFrontend(json.data) : null },
+        { status: 201 }
+      );
     }
-    return NextResponse.json({ success: false, message: 'Gagal membuat FAQ di backend' }, { status: 400 });
-  } catch (error) {
+    const errJson = await res.json().catch(() => null);
+    return NextResponse.json(
+      { success: false, message: errJson?.message || 'Gagal membuat FAQ di backend' },
+      { status: res.status || 400 }
+    );
+  } catch {
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
   }
 }
