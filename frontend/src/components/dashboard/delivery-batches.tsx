@@ -3,7 +3,25 @@
 import React from 'react';
 import { Truck, CheckCircle2, Clock } from 'lucide-react';
 
-export function DeliveryBatches() {
+interface BatchInfo {
+  title?: string;
+  countText?: string;
+  status?: string;
+}
+
+interface DeliveryBatchesProps {
+  batches?: {
+    morning?: BatchInfo;
+    evening?: BatchInfo;
+  };
+}
+
+export function DeliveryBatches({ batches }: DeliveryBatchesProps) {
+  const morningText = batches?.morning?.countText || '0 Box Terkonfirmasi';
+  const morningStatus = batches?.morning?.status || 'Siap';
+  const eveningText = batches?.evening?.countText || '0 Box Terkonfirmasi';
+  const eveningStatus = batches?.evening?.status || 'Siap';
+
   return (
     <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
       <div className="flex items-center justify-between">
@@ -27,11 +45,11 @@ export function DeliveryBatches() {
             </div>
             <div>
               <p className="text-xs font-bold text-slate-800">Batch Pagi / Siang</p>
-              <p className="text-[11px] text-slate-500">96 Box Siap & Terkirim</p>
+              <p className="text-[11px] text-slate-500">{morningText}</p>
             </div>
           </div>
           <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-md">
-            Selesai
+            {morningStatus}
           </span>
         </div>
 
@@ -43,11 +61,11 @@ export function DeliveryBatches() {
             </div>
             <div>
               <p className="text-xs font-bold text-slate-800">Batch Sore / Malam</p>
-              <p className="text-[11px] text-slate-500">46 Box Sedang Dimasak</p>
+              <p className="text-[11px] text-slate-500">{eveningText}</p>
             </div>
           </div>
           <span className="text-[11px] font-bold text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded-md">
-            Diproses
+            {eveningStatus}
           </span>
         </div>
       </div>

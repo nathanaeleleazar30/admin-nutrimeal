@@ -1,6 +1,8 @@
 const adminModel = require('../model/adminModel');
 const customerModel = require('../model/customerModel');
 const { OAuth2Client } = require('google-auth-library');
+const { signJwt, verifyJwt } = require('../lib/jwt');
+const { ADMIN_ROLES, extractBearerToken } = require('../middleware/authMiddleware');
 
 let googleOAuthClient = null;
 if (process.env.GOOGLE_CLIENT_ID) {
@@ -33,7 +35,12 @@ const authController = {
           });
         }
 
-        const token = `token_nutrimeal_${admin.id}_${Date.now()}`;
+        const token = signJwt({
+          sub: admin.id,
+          email: admin.email,
+          role: admin.role || 'admin',
+          type: 'admin',
+        });
         return res.status(200).json({
           success: true,
           message: 'Login berhasil.',
@@ -58,7 +65,12 @@ const authController = {
           });
         }
 
-        const token = `token_customer_${customer.id}_${Date.now()}`;
+        const token = signJwt({
+          sub: customer.id,
+          email: customer.email,
+          role: 'customer',
+          type: 'customer',
+        });
         return res.status(200).json({
           success: true,
           message: 'Login berhasil.',
@@ -100,16 +112,15 @@ const authController = {
     }
   },
 
-  // GET /api/auth/me (Admin Info - baca dari token di header)
+  // GET /api/auth/me (Admin Info - baca & verifikasi JWT di header)
   async getMe(req, res, next) {
     try {
-      const authHeader = req.headers.authorization || '';
-      // Token format: token_nutrimeal_{adminId}_{timestamp}
-      const match = authHeader.replace('Bearer ', '').match(/token_nutrimeal_(adm-[^_]+)/);
-      if (!match || !match[1]) {
-        return res.status(401).json({ success: false, message: 'Token tidak valid atau tidak ditemukan.' });
+      const token = extractBearerToken(req);
+      const payload = verifyJwt(token);
+      if (!payload || !payload.sub || !ADMIN_ROLES.has(payload.role)) {
+        return res.status(401).json({ success: false, message: 'Token admin tidak valid atau telah berakhir.' });
       }
-      const admin = await adminModel.findById(match[1]);
+      const admin = await adminModel.findById(payload.sub);
       if (!admin) {
         return res.status(404).json({ success: false, message: 'Admin tidak ditemukan.' });
       }
@@ -127,66 +138,58 @@ const authController = {
     }
   },
 
-  // POST /api/auth/google (Google Sign-In: Mobile Customer & Web Admin)
+  // POST /api/auth/google (Google Sign-In: Mobile Customer & Web Admin — wajib idToken)
   async googleAuth(req, res, next) {
     try {
-      const { idToken, email, name, googleId, photoUrl, forAdmin } = req.body;
+      const { idToken, forAdmin } = req.body;
 
-      // Untuk Web Admin: wajib mengirimkan idToken Google yang nyata
-      if (forAdmin && !idToken) {
+      // Wajib mengirimkan idToken Google yang valid untuk semua login Google
+      if (!idToken || typeof idToken !== 'string') {
         return res.status(400).json({
           success: false,
-          message: 'Login Google Admin wajib menggunakan idToken Google yang valid.',
+          message: 'Login Google wajib menyertakan idToken Google yang valid.',
         });
       }
 
       let verifiedEmail = null;
-      let verifiedName = name || null;
-      let verifiedGoogleId = googleId || null;
-      let verifiedAvatar = photoUrl || null;
+      let verifiedName = null;
+      let verifiedGoogleId = null;
+      let verifiedAvatar = null;
 
-      // 1. Verifikasi idToken Google secara resmi
-      if (idToken) {
-        try {
-          const validAudiences = [
-            '692683965471-fhlmrbkuf99b6mo2gh366vv18g50tpc2.apps.googleusercontent.com',
-            '326249737628-v0qtts2k6an7pgap2r6qo70bk0n3r81j.apps.googleusercontent.com',
-            '326249737628-2glmsskab2ds7pe1p4f76hff1sp45vh3.apps.googleusercontent.com',
-            process.env.GOOGLE_CLIENT_ID,
-            process.env.GOOGLE_ANDROID_CLIENT_ID,
-          ].filter(Boolean);
+      try {
+        const validAudiences = [
+          '692683965471-fhlmrbkuf99b6mo2gh366vv18g50tpc2.apps.googleusercontent.com',
+          '326249737628-v0qtts2k6an7pgap2r6qo70bk0n3r81j.apps.googleusercontent.com',
+          '326249737628-2glmsskab2ds7pe1p4f76hff1sp45vh3.apps.googleusercontent.com',
+          process.env.GOOGLE_CLIENT_ID,
+          process.env.GOOGLE_ANDROID_CLIENT_ID,
+        ].filter(Boolean);
 
-          const client = googleOAuthClient || new OAuth2Client(validAudiences[0]);
+        const client = googleOAuthClient || new OAuth2Client(validAudiences[0]);
 
-          const ticket = await client.verifyIdToken({
-            idToken,
-            audience: validAudiences.length > 0 ? validAudiences : undefined,
-          });
+        const ticket = await client.verifyIdToken({
+          idToken,
+          audience: validAudiences.length > 0 ? validAudiences : undefined,
+        });
 
-          const payload = ticket.getPayload();
-          verifiedEmail = payload.email;
-          verifiedName = payload.name || payload.given_name || verifiedName;
-          verifiedGoogleId = payload.sub;
-          verifiedAvatar = payload.picture || verifiedAvatar;
-        } catch (tokenErr) {
-          // Token tidak valid
+        const payload = ticket.getPayload();
+        if (!payload || payload.email_verified === false) {
           return res.status(401).json({
             success: false,
-            message: 'Google idToken tidak valid atau kedaluwarsa: ' + tokenErr.message,
+            message: 'Email akun Google belum terverifikasi.',
           });
         }
-      } else {
-        // Tidak ada idToken — hanya boleh untuk mobile dengan email (non-admin)
-        if (forAdmin) {
-          return res.status(401).json({
-            success: false,
-            message: 'Login Google Admin wajib menggunakan idToken Google yang valid.',
-          });
-        }
-        verifiedEmail = email || null;
+        verifiedEmail = payload.email;
+        verifiedName = payload.name || payload.given_name || null;
+        verifiedGoogleId = payload.sub;
+        verifiedAvatar = payload.picture || null;
+      } catch (tokenErr) {
+        return res.status(401).json({
+          success: false,
+          message: 'Google idToken tidak valid atau kedaluwarsa: ' + tokenErr.message,
+        });
       }
 
-      // 2. Validasi minimal: email wajib ada setelah verifikasi
       if (!verifiedEmail) {
         return res.status(400).json({
           success: false,
@@ -194,38 +197,39 @@ const authController = {
         });
       }
 
-      // 3. Jika untuk Web Admin atau email adalah admin terdaftar
-      const existingAdmin = await adminModel.findByEmail(verifiedEmail);
-      if (existingAdmin || forAdmin) {
-        let admin = existingAdmin;
-        if (!admin) {
-          admin = await adminModel.create({
-            id: `adm-${Date.now()}`,
-            name: verifiedName || 'Admin Google',
-            email: verifiedEmail,
-            password: 'google_oauth_managed',
-            role: 'admin',
+      // Untuk Web Admin: JANGAN membuat admin baru otomatis. Hanya izinkan admin terdaftar.
+      const existingAdmin = await adminModel.findByEmail(verifiedEmail.toLowerCase().trim());
+      if (forAdmin) {
+        if (!existingAdmin) {
+          return res.status(403).json({
+            success: false,
+            message: 'Akun Google Anda tidak terdaftar sebagai admin NutriMeal.',
           });
         }
 
-        const token = `token_nutrimeal_${admin.id}_${Date.now()}`;
+        const token = signJwt({
+          sub: existingAdmin.id,
+          email: existingAdmin.email,
+          role: existingAdmin.role || 'admin',
+          type: 'admin',
+        });
         return res.status(200).json({
           success: true,
           message: 'Login Google Admin berhasil.',
           data: {
-            id: admin.id,
-            name: admin.name,
-            email: admin.email,
-            role: admin.role,
+            id: existingAdmin.id,
+            name: existingAdmin.name,
+            email: existingAdmin.email,
+            role: existingAdmin.role,
             token,
           },
         });
       }
 
-      // 4. Cari atau buat customer di database untuk Mobile Customer
+      // Cari atau buat customer di database untuk Mobile Customer
       const customer = await customerModel.findOrCreateGoogleUser({
         googleId: verifiedGoogleId,
-        email: verifiedEmail,
+        email: verifiedEmail.toLowerCase().trim(),
         name: verifiedName || 'Pengguna NutriMeal',
         avatarUrl: verifiedAvatar,
         phone: req.body.phone || '',
@@ -238,8 +242,12 @@ const authController = {
         });
       }
 
-      // 5. Generate token sesi login aplikasi mobile
-      const token = `token_customer_${customer.id}_${Date.now()}`;
+      const token = signJwt({
+        sub: customer.id,
+        email: customer.email,
+        role: 'customer',
+        type: 'customer',
+      });
 
       return res.status(200).json({
         success: true,
@@ -271,25 +279,19 @@ const authController = {
     }
   },
 
-  // GET /api/auth/customer-me (Cek Sesi Customer Mobile)
+  // GET /api/auth/customer-me (Cek Sesi Customer Mobile - wajib JWT valid)
   async getCustomerMe(req, res, next) {
     try {
-      const authHeader = req.headers.authorization || '';
-      const customerId = req.query.id;
-      const email = req.query.email;
-
-      let customer = null;
-      if (customerId) {
-        customer = await customerModel.getById(customerId);
-      } else if (email) {
-        customer = await customerModel.findByEmail(email);
-      } else if (authHeader) {
-        const match = authHeader.match(/token_customer_([^\s_]+)/) || authHeader.match(/(cst-[^\s_]+)/);
-        if (match && match[1]) {
-          customer = await customerModel.getById(match[1]);
-        }
+      const token = extractBearerToken(req);
+      const payload = verifyJwt(token);
+      if (!payload || !payload.sub || payload.role !== 'customer') {
+        return res.status(401).json({
+          success: false,
+          message: 'Token sesi customer tidak valid atau telah berakhir.',
+        });
       }
 
+      const customer = await customerModel.getById(payload.sub);
       if (!customer) {
         return res.status(404).json({
           success: false,
@@ -377,7 +379,12 @@ const authController = {
         password: password,
       });
 
-      const token = `token_customer_${newCustomer.id}_${Date.now()}`;
+      const token = signJwt({
+        sub: newCustomer.id,
+        email: newCustomer.email,
+        role: 'customer',
+        type: 'customer',
+      });
 
       return res.status(201).json({
         success: true,

@@ -10,18 +10,13 @@ interface DonutCategory {
 }
 
 export function DonutPackageSales({
-  totalPortions = 1428,
+  totalPortions = 0,
   categories,
 }: {
   totalPortions?: number;
   categories?: DonutCategory[];
 }) {
-  const items: DonutCategory[] = categories || [
-    { name: 'Grilled Chicken Brokoli', percent: 42, portions: 600, color: '#047857' },
-    { name: 'Pepes Tongkol Rempah', percent: 31, portions: 443, color: '#059669' },
-    { name: 'Chicken Salad Wijen', percent: 18, portions: 257, color: '#b45309' },
-    { name: 'Beef Veggie Teriyaki', percent: 9, portions: 128, color: '#0284c7' },
-  ];
+  const items: DonutCategory[] = categories || [];
 
   // SVG Donut calculation
   const size = 160;
@@ -80,7 +75,12 @@ export function DonutPackageSales({
 
       {/* Legend & Breakdown List */}
       <div className="space-y-2 mt-4 pt-3 border-t border-slate-100">
-        {items.map((cat, idx) => (
+        {items.length === 0 ? (
+          <p className="text-xs text-slate-400 text-center py-2">
+            Belum ada pesanan Lunas pada periode ini.
+          </p>
+        ) : (
+          items.map((cat, idx) => (
           <div key={idx} className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
               <span
@@ -96,7 +96,8 @@ export function DonutPackageSales({
               </span>
             </div>
           </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
