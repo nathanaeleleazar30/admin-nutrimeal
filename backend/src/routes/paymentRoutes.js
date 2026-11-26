@@ -12,5 +12,6 @@ router.post('/qris', requireCustomerAuth, paymentController.createQris);
 router.get('/active', requireCustomerAuth, paymentController.getActive);
 router.get('/:id', requireCustomerAuth, paymentController.getById);
 router.post('/:id/cancel', requireCustomerAuth, paymentController.cancel);
+router.post('/:id/simulate-pay', requireCustomerAuth, paymentController.simulatePay);
 
 module.exports = router;
