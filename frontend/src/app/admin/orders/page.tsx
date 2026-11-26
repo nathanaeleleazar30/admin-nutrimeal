@@ -344,23 +344,12 @@ export default function AdminOrdersPage() {
                           </div>
                         </td>
 
-                        {/* Total Harga & Status Pembayaran */}
+                        {/* Total Harga */}
                         <td className="py-3.5 px-4 font-bold text-slate-900 text-right">
                           <p>Rp {order.totalPrice.toLocaleString('id-ID')}</p>
                           <p className="text-[10px] text-slate-400 font-normal">
-                            {order.paymentMethod || 'QRIS'}
+                            {order.paymentMethod || 'Bank Transfer'}
                           </p>
-                          <span
-                            className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                              order.paymentStatus === 'Lunas' || order.paymentStatus === 'COD'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : order.paymentStatus === 'Dibatalkan' || order.paymentStatus === 'Kedaluwarsa'
-                                ? 'bg-rose-50 text-rose-700 border-rose-200'
-                                : 'bg-amber-50 text-amber-700 border-amber-200'
-                            }`}
-                          >
-                            {order.paymentStatus || order.status || 'Menunggu Pembayaran'}
-                          </span>
                         </td>
 
                         {/* Aksi */}

@@ -22,7 +22,7 @@ let inMemoryPackages = [
     description: '30 Hari • 60x makan (Siang & Malam). Bebas jeda dan gratis ongkir sepuasnya.',
     price: 750000,
     portions: '60 Box (Siang & Malam)',
-    target_audience: 'Personal',
+    target_audience: 'Personal & Keluarga',
     sales_count: 850,
     percentage: 25,
     color: '#0F5132',

@@ -47,19 +47,7 @@ export interface CateringPackage {
   created_at?: string;
 }
 
-export type OrderStatus =
-  | 'Menunggu Pembayaran'
-  | 'Diterima'
-  | 'Diproses'
-  | 'Dikirim'
-  | 'Selesai'
-  | 'Dibatalkan';
-export type PaymentStatus =
-  | 'Menunggu Pembayaran'
-  | 'Lunas'
-  | 'COD'
-  | 'Dibatalkan'
-  | 'Kedaluwarsa';
+export type OrderStatus = 'Diterima' | 'Diproses' | 'Dikirim' | 'Selesai';
 export type CustomerType = 'Personal' | 'Korporat / Kantor' | 'Keluarga';
 
 export interface CateringOrder {
@@ -81,7 +69,7 @@ export interface CateringOrder {
   status: OrderStatus;
   total_price: number;
   payment_method: string;
-  payment_status: PaymentStatus;
+  payment_status: 'Lunas' | 'Menunggu Pembayaran' | 'COD';
   courier_name?: string;
   courier_notes?: string;
   kitchen_notes?: string;

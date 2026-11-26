@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { db } from '@/lib/data-store';
 
 export const dynamic = 'force-dynamic';
@@ -25,10 +24,10 @@ export function mapBackendOrderToFrontend(row: any) {
     deliverySchedule: row.delivery_schedule || row.deliverySchedule || 'Siang (11:30 WIB)',
     deliveryBatch: row.delivery_batch || row.deliveryBatch || 'Pagi/Siang',
     day: row.day || 'Senin',
-    status: row.status || 'Menunggu Pembayaran',
+    status: row.status || 'Diterima',
     totalPrice: Number(row.total_price || row.totalPrice || 0),
-    paymentMethod: row.payment_method || row.paymentMethod || 'QRIS',
-    paymentStatus: row.payment_status || row.paymentStatus || 'Menunggu Pembayaran',
+    paymentMethod: row.payment_method || row.paymentMethod || 'Bank Transfer',
+    paymentStatus: row.payment_status || row.paymentStatus || 'Lunas',
     courierName: row.courier_name || row.courierName || 'Kurir NutriMeal',
     courierNotes: row.courier_notes || row.courierNotes || '',
     kitchenNotes: row.kitchen_notes || row.kitchenNotes || '',
@@ -92,13 +91,6 @@ export async function POST(request: Request) {
     }
 
     try {
-      const cookieStore = await cookies();
-      const adminToken = cookieStore.get('admin_token')?.value;
-      const requestedPaymentStatus = body.paymentStatus || 'Menunggu Pembayaran';
-      const defaultStatus = ['Lunas', 'COD'].includes(requestedPaymentStatus)
-        ? 'Diterima'
-        : 'Menunggu Pembayaran';
-
       const backendPayload = {
         customer_name: body.customerName,
         customer_phone: body.customerPhone || '-',
@@ -113,10 +105,10 @@ export async function POST(request: Request) {
         delivery_schedule: body.deliverySchedule || 'Siang (11:30 WIB)',
         delivery_batch: body.deliveryBatch || 'Pagi/Siang',
         day: body.day || 'Senin',
-        status: body.status || defaultStatus,
+        status: body.status || 'Diterima',
         total_price: Number(body.totalPrice),
-        payment_method: body.paymentMethod || 'QRIS',
-        payment_status: requestedPaymentStatus,
+        payment_method: body.paymentMethod || 'Bank Transfer',
+        payment_status: body.paymentStatus || 'Lunas',
         courier_name: body.courierName || null,
         courier_notes: body.courierNotes || null,
         kitchen_notes: body.notes || body.kitchenNotes || null,
@@ -124,59 +116,49 @@ export async function POST(request: Request) {
 
       const res = await fetch(BACKEND_ORDERS_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(backendPayload),
       });
 
-      const json = await res.json().catch(() => null);
-      if (res.ok && json?.success && json.data) {
-        const mapped = mapBackendOrderToFrontend(json.data);
-        db.createOrder({
-          id: mapped.id,
-          customerName: mapped.customerName,
-          customerPhone: mapped.customerPhone,
-          customerAddress: mapped.customerAddress,
-          customerType: mapped.customerType as any,
-          packageName: mapped.packageName,
-          packageDetail: mapped.packageDetail,
-          deliverySchedule: mapped.deliverySchedule,
-          deliveryBatch: mapped.deliveryBatch as any,
-          status: mapped.status as any,
-          totalPrice: mapped.totalPrice,
-          notes: mapped.notes,
-          day: mapped.day,
-          addressDetail: mapped.addressDetail,
-          menuName: mapped.menuName,
-          menuDetail: mapped.menuDetail,
-          portionsCount: mapped.portionsCount,
-          paymentMethod: mapped.paymentMethod,
-          paymentStatus: mapped.paymentStatus as any,
-          courierName: mapped.courierName,
-          courierNotes: mapped.courierNotes,
-          kitchenNotes: mapped.kitchenNotes,
-        });
-        return NextResponse.json({
-          success: true,
-          message: 'Pesanan katering berhasil dibuat di database backend.',
-          data: mapped,
-        }, { status: 201 });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          const mapped = mapBackendOrderToFrontend(json.data);
+          db.createOrder({
+            id: mapped.id,
+            customerName: mapped.customerName,
+            customerPhone: mapped.customerPhone,
+            customerAddress: mapped.customerAddress,
+            customerType: mapped.customerType as any,
+            packageName: mapped.packageName,
+            packageDetail: mapped.packageDetail,
+            deliverySchedule: mapped.deliverySchedule,
+            deliveryBatch: mapped.deliveryBatch as any,
+            status: mapped.status as any,
+            totalPrice: mapped.totalPrice,
+            notes: mapped.notes,
+            day: mapped.day,
+            addressDetail: mapped.addressDetail,
+            menuName: mapped.menuName,
+            menuDetail: mapped.menuDetail,
+            portionsCount: mapped.portionsCount,
+            paymentMethod: mapped.paymentMethod,
+            paymentStatus: mapped.paymentStatus as any,
+            courierName: mapped.courierName,
+            courierNotes: mapped.courierNotes,
+            kitchenNotes: mapped.kitchenNotes,
+          });
+          return NextResponse.json({
+            success: true,
+            message: 'Pesanan katering berhasil dibuat di database backend.',
+            data: mapped,
+          }, { status: 201 });
+        }
       }
-
-      return NextResponse.json(
-        {
-          success: false,
-          message: json?.message || 'Backend menolak pembuatan pesanan.',
-        },
-        { status: res.status || 400 }
-      );
     } catch (backendErr) {
       console.warn('⚠️ Gagal POST order ke Express Backend, fallback ke data-store:', backendErr);
     }
 
-    const fallbackPayStatus = body.paymentStatus || 'Menunggu Pembayaran';
     const order = db.createOrder({
       customerName: body.customerName,
       customerPhone: body.customerPhone || '-',
@@ -186,9 +168,7 @@ export async function POST(request: Request) {
       packageDetail: body.packageDetail || '1 Paket Katering',
       deliverySchedule: body.deliverySchedule || 'Siang (11:30 WIB)',
       deliveryBatch: body.deliveryBatch || 'Pagi/Siang',
-      status:
-        body.status ||
-        (['Lunas', 'COD'].includes(fallbackPayStatus) ? 'Diterima' : 'Menunggu Pembayaran'),
+      status: body.status || 'Diterima',
       totalPrice: Number(body.totalPrice),
       notes: body.notes,
       day: body.day || 'Senin',
@@ -196,8 +176,8 @@ export async function POST(request: Request) {
       menuName: body.menuName || body.packageName,
       menuDetail: body.menuDetail || body.packageDetail,
       portionsCount: Number(body.portionsCount) || 1,
-      paymentMethod: body.paymentMethod || 'QRIS',
-      paymentStatus: fallbackPayStatus,
+      paymentMethod: body.paymentMethod || 'Bank Transfer',
+      paymentStatus: body.paymentStatus || 'Lunas',
       courierName: body.courierName || 'Kurir NutriMeal',
       courierNotes: body.courierNotes || '',
       kitchenNotes: body.kitchenNotes || '',

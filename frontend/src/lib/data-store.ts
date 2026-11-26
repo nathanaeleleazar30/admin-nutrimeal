@@ -42,20 +42,7 @@ export interface CateringPackage {
   includedMeals: string[];
 }
 
-export type OrderStatus =
-  | 'Menunggu Pembayaran'
-  | 'Diterima'
-  | 'Diproses'
-  | 'Dikirim'
-  | 'Selesai'
-  | 'Dibatalkan';
-
-export type PaymentStatus =
-  | 'Menunggu Pembayaran'
-  | 'Lunas'
-  | 'COD'
-  | 'Dibatalkan'
-  | 'Kedaluwarsa';
+export type OrderStatus = 'Diterima' | 'Diproses' | 'Dikirim' | 'Selesai';
 
 export type CustomerType = 'Personal' | 'Korporat / Kantor' | 'Keluarga';
 
@@ -79,8 +66,8 @@ export interface CateringOrder {
   menuName?: string; // e.g. 'Grilled Chicken + Salad Brokoli'
   menuDetail?: string; // e.g. 'Nasi Merah Organik • Less Oil (1 Porsi)'
   portionsCount?: number;
-  paymentMethod?: string; // e.g. 'QRIS'
-  paymentStatus?: PaymentStatus;
+  paymentMethod?: string; // e.g. 'Bank Transfer (BCA KlikPay)'
+  paymentStatus?: 'Lunas' | 'Menunggu Pembayaran' | 'COD';
   courierName?: string;
   courierNotes?: string;
   kitchenNotes?: string;
@@ -660,34 +647,23 @@ class NutriMealDatabase {
 
   // Analytics & Dashboard Summary
   public getAnalytics() {
-    const activeKitchenOrders = this.orders.filter(
-      (o) =>
-        o.status !== 'Menunggu Pembayaran' &&
-        o.status !== 'Dibatalkan' &&
-        (o.paymentStatus === 'Lunas' || o.paymentStatus === 'COD')
-    );
-    const paidOrders = this.orders.filter((o) => o.paymentStatus === 'Lunas');
-    const totalRevenue = paidOrders.reduce((sum, o) => sum + (Number(o.totalPrice) || 0), 0);
-    const readyToShip = activeKitchenOrders.filter((o) => o.status === 'Dikirim').length;
-    const inProcess = activeKitchenOrders.filter((o) => o.status === 'Diproses').length;
-    const totalSoldPortions = paidOrders.reduce((sum, o) => sum + (o.portionsCount || 1), 0);
+    const totalRevenue = this.orders.reduce((sum, o) => sum + (Number(o.totalPrice) || 0), 0);
+    const readyToShip = this.orders.filter((o) => o.status === 'Dikirim').length;
+    const inProcess = this.orders.filter((o) => o.status === 'Diproses').length;
     const revenueDisplay = totalRevenue > 0
       ? (totalRevenue >= 1000000 ? `Rp ${(totalRevenue / 1000000).toFixed(1)}jt` : `Rp ${(totalRevenue / 1000).toFixed(0)}rb`)
       : 'Rp 0';
 
     return {
       kpi: {
-        totalOrdersToday: activeKitchenOrders.length,
-        paidOrdersCount: paidOrders.length,
+        totalOrdersToday: this.orders.length,
         totalOrdersChange: '0%',
         readyToShip,
         inProcess,
         monthlyRevenue: totalRevenue,
         monthlyRevenueDisplay: revenueDisplay,
         monthlyRevenueChange: '0%',
-        dailyRevenueAverage: paidOrders.length > 0
-          ? `Rp ${Math.round(totalRevenue / paidOrders.length).toLocaleString('id-ID')}`
-          : 'Rp 0',
+        dailyRevenueAverage: 'Rp 0',
         activeCustomers: this.customers.length,
         newCustomersThisMonth: this.customers.length,
         personalCustomers: this.customers.filter((c) => c.type === 'Personal').length,
@@ -705,8 +681,13 @@ class NutriMealDatabase {
         { day: 'Min', diet: 0, kantor: 0, family: 0, event: 0, total: 0 },
       ],
       packageDonut: {
-        totalSoldPortions,
-        categories: [],
+        totalSoldPortions: this.packages.reduce((sum, p) => sum + p.portionCount, 0),
+        categories: this.packages.map((pkg) => ({
+          name: pkg.name,
+          percent: pkg.percentage,
+          portions: pkg.portionCount,
+          color: pkg.color,
+        })),
       },
       deliveryBatches: {
         morning: {

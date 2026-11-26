@@ -24,21 +24,16 @@ export function OrdersTable({ initialOrders, onSelectOrder }: OrdersTableProps) 
 
   const filterTabs: Array<'Semua' | OrderStatus> = [
     'Semua',
-    'Menunggu Pembayaran',
     'Diterima',
     'Diproses',
     'Dikirim',
     'Selesai',
-    'Dibatalkan',
   ];
 
   const filteredOrders =
     activeTab === 'Semua'
       ? orders
       : orders.filter((o) => o.status === activeTab);
-
-  const isPaidOrCod = (order: CateringOrder) =>
-    order.paymentStatus === 'Lunas' || order.paymentStatus === 'COD';
 
   const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
     try {
@@ -47,60 +42,23 @@ export function OrdersTable({ initialOrders, onSelectOrder }: OrdersTableProps) 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       });
-      const json = await res.json().catch(() => null);
       if (res.ok) {
         setOrders((prev) =>
           prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
         );
-      } else {
-        alert(json?.message || 'Status pesanan tidak dapat diperbarui.');
       }
     } catch {
-      alert('Gagal menghubungi server untuk mengubah status pesanan.');
+      // Local optimistic update fallback
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+      );
     } finally {
       setStatusMenuOpen(null);
     }
   };
 
-  const getPaymentBadge = (paymentStatus?: string) => {
-    const val = paymentStatus || 'Menunggu Pembayaran';
-    if (val === 'Lunas') {
-      return (
-        <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-          Lunas
-        </span>
-      );
-    }
-    if (val === 'COD') {
-      return (
-        <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
-          COD
-        </span>
-      );
-    }
-    if (val === 'Dibatalkan' || val === 'Kedaluwarsa') {
-      return (
-        <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-          {val}
-        </span>
-      );
-    }
-    return (
-      <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-        Menunggu Pembayaran
-      </span>
-    );
-  };
-
   const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
-      case 'Menunggu Pembayaran':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-50 text-orange-700 border border-orange-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
-            Menunggu Pembayaran
-          </span>
-        );
       case 'Diterima':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200">
@@ -127,13 +85,6 @@ export function OrdersTable({ initialOrders, onSelectOrder }: OrdersTableProps) 
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
             Selesai
-          </span>
-        );
-      case 'Dibatalkan':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-            Dibatalkan
           </span>
         );
     }
@@ -244,29 +195,20 @@ export function OrdersTable({ initialOrders, onSelectOrder }: OrdersTableProps) 
 
                       {/* Dropdown status changer */}
                       {statusMenuOpen === order.id && (
-                        <div className="absolute left-0 mt-1 w-44 bg-white border border-slate-200 rounded-lg shadow-lg p-1 z-20">
-                          {(['Diterima', 'Diproses', 'Dikirim', 'Selesai', 'Dibatalkan'] as OrderStatus[]).map(
-                            (st) => {
-                              const locked =
-                                st !== 'Dibatalkan' && !isPaidOrCod(order);
-                              return (
-                                <button
-                                  key={st}
-                                  disabled={locked}
-                                  onClick={() => handleUpdateStatus(order.id, st)}
-                                  className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center justify-between ${
-                                    locked
-                                      ? 'text-slate-300 cursor-not-allowed'
-                                      : order.status === st
-                                      ? 'text-emerald-700 font-bold hover:bg-slate-50'
-                                      : 'text-slate-600 hover:bg-slate-50'
-                                  }`}
-                                >
-                                  <span>{st}</span>
-                                  {order.status === st && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
-                                </button>
-                              );
-                            }
+                        <div className="absolute left-0 mt-1 w-36 bg-white border border-slate-200 rounded-lg shadow-lg p-1 z-20">
+                          {(['Diterima', 'Diproses', 'Dikirim', 'Selesai'] as OrderStatus[]).map(
+                            (st) => (
+                              <button
+                                key={st}
+                                onClick={() => handleUpdateStatus(order.id, st)}
+                                className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium hover:bg-slate-50 flex items-center justify-between ${
+                                  order.status === st ? 'text-emerald-700 font-bold' : 'text-slate-600'
+                                }`}
+                              >
+                                <span>{st}</span>
+                                {order.status === st && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
+                              </button>
+                            )
                           )}
                         </div>
                       )}
@@ -275,8 +217,7 @@ export function OrdersTable({ initialOrders, onSelectOrder }: OrdersTableProps) 
 
                   {/* Price */}
                   <td className="py-3.5 px-4 font-bold text-slate-900 text-right">
-                    <p>Rp {order.totalPrice.toLocaleString('id-ID')}</p>
-                    {getPaymentBadge(order.paymentStatus)}
+                    Rp {order.totalPrice.toLocaleString('id-ID')}
                   </td>
 
                   {/* Actions */}

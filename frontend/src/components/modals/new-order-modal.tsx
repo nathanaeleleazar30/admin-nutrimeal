@@ -34,7 +34,6 @@ export function NewOrderModal({ isOpen, onClose, onOrderCreated }: NewOrderModal
     deliveryBatch: 'Pagi/Siang' | 'Sore/Malam';
     day: string;
     paymentMethod: string;
-    paymentStatus: 'Lunas' | 'COD' | 'Menunggu Pembayaran';
     totalPrice: number;
     notes: string;
     isZeroWaste: boolean;
@@ -51,8 +50,7 @@ export function NewOrderModal({ isOpen, onClose, onOrderCreated }: NewOrderModal
     deliverySchedule: '11:30 - 13:00 WIB',
     deliveryBatch: 'Pagi/Siang',
     day: 'Senin',
-    paymentMethod: 'QRIS',
-    paymentStatus: 'Lunas',
+    paymentMethod: 'QRIS Instant Pay',
     totalPrice: 45000,
     notes: '',
     isZeroWaste: true,
@@ -105,11 +103,9 @@ export function NewOrderModal({ isOpen, onClose, onOrderCreated }: NewOrderModal
         }),
       });
       const data = await res.json();
-      if (res.ok && data.success && data.data) {
+      if (data.success && data.data) {
         onOrderCreated(data.data);
         onClose();
-      } else {
-        alert(data?.message || 'Gagal membuat pesanan katering.');
       }
     } catch {
       alert('Gagal membuat pesanan katering.');
@@ -297,36 +293,25 @@ export function NewOrderModal({ isOpen, onClose, onOrderCreated }: NewOrderModal
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="font-semibold text-slate-700 block mb-1">Metode Pembayaran</label>
-              <select
-                value={formData.paymentMethod}
-                onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-emerald-700 text-xs bg-white"
-              >
-                <option value="QRIS">QRIS</option>
-                <option value="Transfer Bank">Transfer Bank (Manual Admin)</option>
-                <option value="COD (Bayar di Tempat)">COD (Bayar di Tempat)</option>
-              </select>
-            </div>
-            <div>
-              <label className="font-semibold text-slate-700 block mb-1">Status Pembayaran</label>
-              <select
-                value={formData.paymentStatus}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    paymentStatus: e.target.value as 'Lunas' | 'COD' | 'Menunggu Pembayaran',
-                  })
-                }
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-emerald-700 text-xs bg-white"
-              >
-                <option value="Lunas">Lunas (Sudah Dibayar)</option>
-                <option value="COD">COD</option>
-                <option value="Menunggu Pembayaran">Menunggu Pembayaran</option>
-              </select>
-            </div>
+          <div>
+            <label className="font-semibold text-slate-700 block mb-1">Metode Pembayaran (Sinkron Mobile App)</label>
+            <select
+              value={formData.paymentMethod}
+              onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-emerald-700 text-xs bg-white"
+            >
+              <option value="QRIS Instant Pay">QRIS Instant Pay (Semua E-Wallet & M-Banking)</option>
+              <option value="BCA Virtual Account">BCA Virtual Account</option>
+              <option value="Mandiri Virtual Account">Mandiri Virtual Account</option>
+              <option value="BRI Virtual Account">BRI Virtual Account</option>
+              <option value="BNI Virtual Account">BNI Virtual Account</option>
+              <option value="E-Wallet (GoPay)">E-Wallet (GoPay)</option>
+              <option value="E-Wallet (OVO)">E-Wallet (OVO)</option>
+              <option value="E-Wallet (DANA)">E-Wallet (DANA)</option>
+              <option value="E-Wallet (ShopeePay)">E-Wallet (ShopeePay)</option>
+              <option value="COD (Bayar di Tempat)">COD (Bayar di Tempat)</option>
+              <option value="Kartu Kredit / Debit (Visa/Mastercard)">Kartu Kredit / Debit (Visa/Mastercard)</option>
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

@@ -50,22 +50,9 @@ export async function GET() {
       }
     }
 
-    const activeKitchenOrders = orders.filter(
-      (o) =>
-        o.status !== 'Menunggu Pembayaran' &&
-        o.status !== 'Dibatalkan' &&
-        (o.paymentStatus === 'Lunas' || o.paymentStatus === 'COD')
-    );
-    const paidOrders = orders.filter((o) => o.paymentStatus === 'Lunas');
-    const totalRevenue = paidOrders.reduce((sum, o) => sum + (Number(o.totalPrice) || 0), 0);
-    const readyToShip = activeKitchenOrders.filter((o) => o.status === 'Dikirim').length;
-    const inProcess = activeKitchenOrders.filter((o) => o.status === 'Diproses').length;
-    const morningBoxes = activeKitchenOrders
-      .filter((o) => o.deliveryBatch === 'Pagi/Siang')
-      .reduce((sum, o) => sum + (Number(o.portionsCount) || 1), 0);
-    const eveningBoxes = activeKitchenOrders
-      .filter((o) => o.deliveryBatch === 'Sore/Malam')
-      .reduce((sum, o) => sum + (Number(o.portionsCount) || 1), 0);
+    const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.totalPrice) || 0), 0);
+    const readyToShip = orders.filter((o) => o.status === 'Dikirim').length;
+    const inProcess = orders.filter((o) => o.status === 'Diproses').length;
     const personalCustomers = customers.filter((c) => (c.type || 'Personal') === 'Personal').length;
     const corporateCustomers = customers.filter((c) => (c.type || '').includes('Kantor') || (c.type || '').includes('Korporat')).length;
 
@@ -74,17 +61,14 @@ export async function GET() {
       : 'Rp 0';
 
     const kpi = {
-      totalOrdersToday: activeKitchenOrders.length,
-      paidOrdersCount: paidOrders.length,
+      totalOrdersToday: orders.length,
       totalOrdersChange: '0%',
       readyToShip,
       inProcess,
       monthlyRevenue: totalRevenue,
       monthlyRevenueDisplay: revenueDisplay,
       monthlyRevenueChange: '0%',
-      dailyRevenueAverage: paidOrders.length > 0
-        ? `Rp ${Math.round(totalRevenue / paidOrders.length).toLocaleString('id-ID')}`
-        : 'Rp 0',
+      dailyRevenueAverage: 'Rp 0',
       activeCustomers: customers.length,
       newCustomersThisMonth: customers.length,
       personalCustomers,
@@ -93,64 +77,28 @@ export async function GET() {
       availablePackages: packages.length,
     };
 
-    const daysList = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
-    const dayPrefixMap: Record<string, string> = {
-      Senin: 'Sen',
-      Selasa: 'Sel',
-      Rabu: 'Rab',
-      Kamis: 'Kam',
-      Jumat: 'Jum',
-      Sabtu: 'Sab',
-      Minggu: 'Min',
-    };
-    const weeklySalesMap: Record<string, { day: string; diet: number; kantor: number; family: number; event: number; total: number }> = {};
-    for (const d of daysList) {
-      weeklySalesMap[d] = { day: d, diet: 0, kantor: 0, family: 0, event: 0, total: 0 };
-    }
-    for (const o of paidOrders) {
-      const shortDay = dayPrefixMap[o.day] || 'Sen';
-      const portions = Number(o.portionsCount) || 1;
-      const pkgLower = String(o.packageName || '').toLowerCase();
-      const target = weeklySalesMap[shortDay];
-      if (!target) continue;
-      if (pkgLower.includes('kantor') || o.customerType === 'Korporat / Kantor') {
-        target.kantor += portions;
-      } else if (pkgLower.includes('family') || pkgLower.includes('keluarga') || o.customerType === 'Keluarga') {
-        target.family += portions;
-      } else if (pkgLower.includes('event') || pkgLower.includes('prasmanan')) {
-        target.event += portions;
-      } else {
-        target.diet += portions;
-      }
-      target.total += portions;
-    }
+    const categories = packages.map((pkg) => ({
+      name: pkg.name,
+      percent: pkg.percentage || 25,
+      portions: pkg.salesCount || 100,
+      color: pkg.color || '#059669',
+    }));
 
-    const totalSoldPortions = paidOrders.reduce((sum, o) => sum + (Number(o.portionsCount) || 1), 0);
-    const palette = ['#047857', '#059669', '#b45309', '#0284c7', '#475569'];
-    const breakdownMap = new Map<string, { name: string; portions: number; revenue: number }>();
-    for (const o of paidOrders) {
-      const key = o.packageName || 'Pesanan Katering';
-      const entry = breakdownMap.get(key) || { name: key, portions: 0, revenue: 0 };
-      entry.portions += Number(o.portionsCount) || 1;
-      entry.revenue += Number(o.totalPrice) || 0;
-      breakdownMap.set(key, entry);
-    }
-    const categories = Array.from(breakdownMap.values())
-      .sort((a, b) => b.portions - a.portions)
-      .slice(0, 5)
-      .map((item, idx) => ({
-        name: item.name,
-        percent: totalSoldPortions > 0 ? Math.round((item.portions / totalSoldPortions) * 100) : 0,
-        portions: item.portions,
-        revenue: item.revenue,
-        color: palette[idx % palette.length],
-      }));
+    const totalSoldPortions = categories.reduce((sum, c) => sum + c.portions, 0);
 
     return NextResponse.json({
       success: true,
       data: {
         kpi,
-        weeklySales: daysList.map((d) => weeklySalesMap[d]),
+        weeklySales: [
+          { day: 'Sen', diet: 0, kantor: 0, family: 0, event: 0, total: 0 },
+          { day: 'Sel', diet: 0, kantor: 0, family: 0, event: 0, total: 0 },
+          { day: 'Rab', diet: 0, kantor: 0, family: 0, event: 0, total: 0 },
+          { day: 'Kam', diet: 0, kantor: 0, family: 0, event: 0, total: 0 },
+          { day: 'Jum', diet: 0, kantor: 0, family: 0, event: 0, total: 0 },
+          { day: 'Sab', diet: 0, kantor: 0, family: 0, event: 0, total: 0 },
+          { day: 'Min', diet: 0, kantor: 0, family: 0, event: 0, total: 0 },
+        ],
         packageDonut: {
           totalSoldPortions,
           categories,
@@ -159,15 +107,13 @@ export async function GET() {
           morning: {
             title: 'Batch Pagi / Siang',
             timeRange: '11:00 - 12:30 WIB',
-            countText: `${morningBoxes} Box Terkonfirmasi`,
-            boxesCount: morningBoxes,
+            countText: `${readyToShip} Box Siap & Terkirim`,
             status: readyToShip > 0 ? 'Selesai' : 'Siap',
           },
           evening: {
             title: 'Batch Sore / Malam',
             timeRange: '16:00 - 17:30 WIB',
-            countText: `${eveningBoxes} Box Terkonfirmasi`,
-            boxesCount: eveningBoxes,
+            countText: `${inProcess} Box Sedang Dimasak`,
             status: inProcess > 0 ? 'Diproses' : 'Siap',
           },
         },

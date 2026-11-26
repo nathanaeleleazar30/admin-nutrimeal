@@ -155,50 +155,31 @@ export function OrderDetailModal({
 
           {/* Pricing */}
           <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-100 flex items-center justify-between">
-            <div>
-              <span className="font-bold text-slate-700 block">Total Tagihan Pesanan:</span>
-              <span className="text-[11px] font-semibold text-slate-500">
-                {order.paymentMethod || 'QRIS'} • {order.paymentStatus || 'Menunggu Pembayaran'}
-              </span>
-            </div>
+            <span className="font-bold text-slate-700">Total Tagihan Pesanan:</span>
             <span className="text-base font-black text-emerald-800">
               Rp {order.totalPrice.toLocaleString('id-ID')}
             </span>
           </div>
-
-          {!['Lunas', 'COD'].includes(order.paymentStatus || 'Menunggu Pembayaran') && (
-              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-semibold text-amber-800">
-                Status dapur &amp; pengantaran terkunci selama pembayaran berstatus &ldquo;{order.paymentStatus || 'Menunggu Pembayaran'}&rdquo;.
-              </div>
-            )}
 
           {/* Fast Status Action Buttons */}
           <div className="pt-2">
             <span className="text-[11px] font-bold text-slate-400 block mb-2">
               UBAH STATUS PESANAN:
             </span>
-            <div className="grid grid-cols-5 gap-2">
-              {([...statusSteps, 'Dibatalkan'] as OrderStatus[]).map((st) => {
-                const locked =
-                  st !== 'Dibatalkan' &&
-                  !['Lunas', 'COD'].includes(order.paymentStatus || 'Menunggu Pembayaran');
-                return (
-                  <button
-                    key={st}
-                    disabled={locked}
-                    onClick={() => onStatusChange?.(order.id, st)}
-                    className={`py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${
-                      locked
-                        ? 'bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed'
-                        : order.status === st
-                        ? 'bg-emerald-800 text-white border-emerald-800 shadow-xs'
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    {st}
-                  </button>
-                );
-              })}
+            <div className="grid grid-cols-4 gap-2">
+              {statusSteps.map((st) => (
+                <button
+                  key={st}
+                  onClick={() => onStatusChange?.(order.id, st)}
+                  className={`py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                    order.status === st
+                      ? 'bg-emerald-800 text-white border-emerald-800 shadow-xs'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {st}
+                </button>
+              ))}
             </div>
           </div>
         </div>

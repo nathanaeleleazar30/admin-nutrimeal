@@ -45,10 +45,6 @@ function SuratJalanContent() {
   }, []);
 
   const manifestOrders = orders.filter((o) => {
-    const isPaidOrCod =
-      o.status !== 'Menunggu Pembayaran' &&
-      o.status !== 'Dibatalkan' &&
-      (o.paymentStatus === 'Lunas' || o.paymentStatus === 'COD');
     const matchesDay = filterDay === 'Semua' ? true : (o.day || 'Senin') === filterDay;
     const matchesBatch =
       filterBatch === 'Semua'
@@ -61,7 +57,7 @@ function SuratJalanContent() {
         ? true
         : o.courierName?.includes(selectedCourier);
 
-    return isPaidOrCod && matchesDay && matchesBatch && matchesCourier;
+    return matchesDay && matchesBatch && matchesCourier;
   });
 
   const totalBoxes = manifestOrders.reduce(

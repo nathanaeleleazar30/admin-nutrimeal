@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { db, OrderStatus } from '@/lib/data-store';
 import { mapBackendOrderToFrontend } from '../route';
 
@@ -53,14 +52,7 @@ export async function PATCH(
     const body = await request.json();
 
     if (body.status) {
-      const validStatuses: OrderStatus[] = [
-        'Menunggu Pembayaran',
-        'Diterima',
-        'Diproses',
-        'Dikirim',
-        'Selesai',
-        'Dibatalkan',
-      ];
+      const validStatuses: OrderStatus[] = ['Diterima', 'Diproses', 'Dikirim', 'Selesai'];
       if (!validStatuses.includes(body.status)) {
         return NextResponse.json(
           { success: false, message: 'Status tidak valid.' },
@@ -69,56 +61,31 @@ export async function PATCH(
       }
 
       try {
-        const cookieStore = await cookies();
-        const adminToken = cookieStore.get('admin_token')?.value;
         const res = await fetch(`${BACKEND_ORDERS_URL}/${id}/status`, {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: body.status }),
         });
-        const json = await res.json().catch(() => null);
         if (res.ok) {
+          const json = await res.json();
           db.updateOrderStatus(id, body.status);
           return NextResponse.json({
             success: true,
             message: `Status pesanan ${id} berhasil diperbarui di backend database.`,
-            data: json?.data || { id, status: body.status },
+            data: json.data || { id, status: body.status },
           });
         }
-        return NextResponse.json(
-          {
-            success: false,
-            message: json?.message || `Gagal memperbarui status pesanan ${id}.`,
-          },
-          { status: res.status || 400 }
-        );
       } catch (backendErr) {
         console.warn(`⚠️ Gagal PATCH order status ${id} ke Express:`, backendErr);
       }
 
-      const existing = db.getOrderById(id);
-      if (!existing) {
+      const updated = db.updateOrderStatus(id, body.status);
+      if (!updated) {
         return NextResponse.json(
           { success: false, message: `Pesanan dengan ID ${id} tidak ditemukan.` },
           { status: 404 }
         );
       }
-      if (
-        ['Diterima', 'Diproses', 'Dikirim', 'Selesai'].includes(body.status) &&
-        !['Lunas', 'COD'].includes(existing.paymentStatus || '')
-      ) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: 'Pesanan belum dibayar (Lunas/COD), status tidak dapat diproses atau dikirim.',
-          },
-          { status: 409 }
-        );
-      }
-      const updated = db.updateOrderStatus(id, body.status);
       return NextResponse.json({
         success: true,
         message: `Status pesanan ${id} berhasil diperbarui menjadi ${body.status}.`,
@@ -137,5 +104,3 @@ export async function PATCH(
     );
   }
 }
-
-export const PUT = PATCH;

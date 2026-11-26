@@ -127,7 +127,6 @@ async function runSeeder() {
     await connection.query(`
       CREATE TABLE IF NOT EXISTS \`orders\` (
         \`id\` VARCHAR(50) NOT NULL,
-        \`customer_id\` VARCHAR(50) NULL,
         \`customer_name\` VARCHAR(100) NOT NULL,
         \`customer_phone\` VARCHAR(25) NOT NULL,
         \`customer_address\` TEXT NOT NULL,
@@ -141,61 +140,18 @@ async function runSeeder() {
         \`delivery_schedule\` VARCHAR(100) NOT NULL,
         \`delivery_batch\` ENUM('Pagi/Siang', 'Sore/Malam') NOT NULL DEFAULT 'Pagi/Siang',
         \`day\` VARCHAR(20) NOT NULL DEFAULT 'Senin',
-        \`status\` ENUM('Menunggu Pembayaran', 'Diterima', 'Diproses', 'Dikirim', 'Selesai', 'Dibatalkan') NOT NULL DEFAULT 'Menunggu Pembayaran',
+        \`status\` ENUM('Diterima', 'Diproses', 'Dikirim', 'Selesai') NOT NULL DEFAULT 'Diterima',
         \`total_price\` INT NOT NULL,
         \`payment_method\` VARCHAR(100) NOT NULL DEFAULT 'QRIS',
-        \`payment_status\` ENUM('Menunggu Pembayaran', 'Lunas', 'COD', 'Dibatalkan', 'Kedaluwarsa') NOT NULL DEFAULT 'Menunggu Pembayaran',
+        \`payment_status\` ENUM('Lunas', 'Menunggu Pembayaran', 'COD') NOT NULL DEFAULT 'Lunas',
         \`courier_name\` VARCHAR(100) NULL,
         \`courier_notes\` TEXT NULL,
         \`kitchen_notes\` TEXT NULL,
         \`created_at\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         \`updated_at\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (\`id\`),
-        INDEX \`idx_orders_customer_id\` (\`customer_id\`)
+        PRIMARY KEY (\`id\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
-
-    // Pastikan kolom & enum orders selaras jika tabel orders sudah ada sebelumnya
-    try { await connection.query("ALTER TABLE `orders` ADD COLUMN `customer_id` VARCHAR(50) NULL AFTER `id`, ADD INDEX `idx_orders_customer_id` (`customer_id`);"); } catch (e) {}
-    try { await connection.query("ALTER TABLE `orders` MODIFY COLUMN `status` ENUM('Menunggu Pembayaran', 'Diterima', 'Diproses', 'Dikirim', 'Selesai', 'Dibatalkan') NOT NULL DEFAULT 'Menunggu Pembayaran';"); } catch (e) {}
-    try { await connection.query("ALTER TABLE `orders` MODIFY COLUMN `payment_status` ENUM('Menunggu Pembayaran', 'Lunas', 'COD', 'Dibatalkan', 'Kedaluwarsa') NOT NULL DEFAULT 'Menunggu Pembayaran';"); } catch (e) {}
-
-    // Tabel Payments
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS \`payments\` (
-        \`id\` VARCHAR(50) NOT NULL,
-        \`order_id\` VARCHAR(50) NOT NULL,
-        \`customer_id\` VARCHAR(50) NOT NULL,
-        \`provider\` VARCHAR(30) NOT NULL DEFAULT 'midtrans_qris',
-        \`provider_order_id\` VARCHAR(50) NOT NULL,
-        \`transaction_id\` VARCHAR(100) NULL,
-        \`gross_amount\` INT NOT NULL,
-        \`qr_string\` TEXT NULL,
-        \`qr_url\` TEXT NULL,
-        \`status\` ENUM('creating', 'pending', 'paid', 'cancelled', 'expired', 'failed') NOT NULL DEFAULT 'creating',
-        \`expires_at\` DATETIME NULL,
-        \`paid_at\` DATETIME NULL,
-        \`idempotency_key\` CHAR(36) NOT NULL,
-        \`request_hash\` CHAR(64) NULL,
-        \`midtrans_idempotency_key\` CHAR(36) NULL,
-        \`request_snapshot\` JSON NULL,
-        \`raw_response\` JSON NULL,
-        \`created_at\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        \`updated_at\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (\`id\`),
-        UNIQUE KEY \`uniq_payments_provider_order_id\` (\`provider_order_id\`),
-        UNIQUE KEY \`uniq_payments_customer_idempotency\` (\`customer_id\`, \`idempotency_key\`),
-        INDEX \`idx_payments_order_id\` (\`order_id\`),
-        INDEX \`idx_payments_customer_status\` (\`customer_id\`, \`status\`),
-        CONSTRAINT \`fk_payments_order_id\`
-          FOREIGN KEY (\`order_id\`) REFERENCES \`orders\` (\`id\`)
-          ON DELETE CASCADE
-          ON UPDATE CASCADE
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    `);
-    try { await connection.query("ALTER TABLE `payments` MODIFY COLUMN `status` ENUM('creating', 'pending', 'paid', 'cancelled', 'expired', 'failed') NOT NULL DEFAULT 'creating';"); } catch (e) {}
-    try { await connection.query("ALTER TABLE `payments` ADD COLUMN `request_hash` CHAR(64) NULL AFTER `idempotency_key`;"); } catch (e) {}
-    try { await connection.query("ALTER TABLE `payments` ADD COLUMN `midtrans_idempotency_key` CHAR(36) NULL AFTER `request_hash`;"); } catch (e) {}
 
     // Tabel Vouchers
     await connection.query(`
@@ -358,10 +314,9 @@ async function runSeeder() {
     }
     console.log(`✅ Meals seeded: ${meals.length} menu`);
 
-    // d. Packages Seed (5 Paket termasuk paket populer katalog Flutter)
+    // d. Packages Seed (4 Paket)
     const packages = [
       ['pkg-1', 'Paket Sehat Diet Mingguan', 'Mingguan', 'Paket makanan sehat defisit kalori seimbang dengan kontrol karbohidrat dan protein tinggi.', 350000, '10 Porsi (Makan Siang & Malam)', 'Personal', 600, 42, '#059669', 'Grilled Chicken, Chicken Salad, Pepes Tongkol'],
-      ['pkg-popular', 'Paket Bulanan Lengkap', 'Bulanan', '30 Hari • 60x makan (Siang & Malam). Bebas jeda dan gratis ongkir sepuasnya.', 750000, '60 Box (Siang & Malam)', 'Personal', 850, 25, '#0F5132', 'Ayam Teriyaki, Salmon Quinoa, Beef Veggie, Tofu Bowl'],
       ['pkg-2', 'Paket Makan Siang Kantor', 'Harian', 'Solusi makan siang bergizi untuk tim perusahaan dengan porsi pas dan higienis.', 525000, '15 Box Prasmanan Mini', 'Korporat / Kantor', 443, 31, '#0284c7', 'Lean Beef Veggie, Chicken Wrap, Grilled Chicken'],
       ['pkg-3', 'Paket Family Sehat 5 Hari', 'Mingguan', 'Menu variatif lengkap lauk pauk tinggi serat untuk seluruh anggota keluarga.', 680000, '20 Porsi Keluarga', 'Keluarga', 257, 18, '#d97706', 'Pepes Tongkol, Ayam Bowl, Fresh Chicken Salad'],
       ['pkg-4', 'Prasmanan Rapat & Event', 'Prasmanan / Event', 'Layanan prasmanan sehat premium untuk meeting, seminar, dan acara kantor.', 1250000, '25 Porsi Prasmanan', 'Korporat / Kantor', 128, 9, '#dc2626', 'Lean Beef Veggie, Grilled Chicken Salad, Nutri Ayam Bowl'],
